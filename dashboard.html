@@ -54,7 +54,6 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 .notice-warn{background:var(--amber-bg);border:1px solid rgba(251,191,36,.2);color:var(--amber);}
 .controls{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center;}
 .ctrl-select{padding:7px 12px;background:var(--surface);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-size:12px;font-family:'DM Mono',monospace;cursor:pointer;outline:none;}
-.ctrl-select:focus{border-color:var(--green);}
 .table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:20px;}
 table{width:100%;border-collapse:collapse;}
 th{padding:11px 14px;text-align:left;font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;border-bottom:1px solid var(--border);background:var(--surface2);font-weight:400;}
@@ -63,15 +62,14 @@ tr:last-child td{border-bottom:none;}
 tr:hover td{background:rgba(255,255,255,.02);}
 .market-name{font-weight:400;color:var(--text);line-height:1.4;}
 .market-ticker{font-size:11px;font-family:'DM Mono',monospace;color:var(--muted2);margin-top:2px;}
-.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:4px;font-size:11px;font-family:'DM Mono',monospace;font-weight:500;letter-spacing:.03em;}
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:4px;font-size:11px;font-family:'DM Mono',monospace;font-weight:500;}
 .b-bet{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);}
 .b-fade{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border);}
 .b-skip{background:transparent;color:var(--muted2);border:1px solid var(--border);}
 .b-paper{background:var(--amber-bg);color:var(--amber);border:1px solid rgba(251,191,36,.2);}
 .b-live{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);}
 .b-insane{background:#7c3aed22;color:#a78bfa;border:1px solid #7c3aed44;}
-.b-none{background:transparent;color:var(--muted2);border:1px solid var(--border);font-style:italic;}
-.b-24h{background:var(--blue-bg);color:var(--blue);border:1px solid rgba(96,165,250,.2);}
+.b-none{background:transparent;color:var(--muted2);border:1px solid var(--border);}
 .price-col{display:flex;flex-direction:column;gap:4px;}
 .price-row{display:flex;align-items:center;gap:8px;}
 .p-lbl{font-size:10px;font-family:'DM Mono',monospace;color:var(--muted2);width:12px;}
@@ -80,7 +78,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
 .p-num{font-size:12px;font-family:'DM Mono',monospace;}
 .empty-state{text-align:center;padding:60px 20px;color:var(--muted);}
 .empty-state .big{font-family:'Instrument Serif',serif;font-size:32px;color:var(--muted2);margin-bottom:12px;}
-.kelly-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;margin-bottom:24px;}
+.kelly-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;}
 .kelly-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px;}
 .kelly-title{font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:20px;}
 .slider-field{margin-bottom:18px;}
@@ -102,11 +100,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .sc-name{font-size:12px;color:var(--text);}
 .sc-desc{font-size:11px;font-family:'DM Mono',monospace;color:var(--muted2);margin-top:2px;}
 .sc-right{display:flex;align-items:center;gap:8px;}
-.load-btn{padding:4px 10px;border:1px solid var(--border2);border-radius:4px;background:transparent;color:var(--muted);font-size:11px;font-family:'DM Mono',monospace;cursor:pointer;transition:all .15s;}
+.load-btn{padding:4px 10px;border:1px solid var(--border2);border-radius:4px;background:transparent;color:var(--muted);font-size:11px;font-family:'DM Mono',monospace;cursor:pointer;}
 .load-btn:hover{border-color:var(--green);color:var(--green);}
 .footer{margin-top:48px;padding-top:20px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:11px;font-family:'DM Mono',monospace;color:var(--muted2);}
-.live-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);margin-right:4px;animation:glow 1.5s ease-in-out infinite;}
-@keyframes glow{0%,100%{opacity:.4}50%{opacity:1;box-shadow:0 0 6px var(--green)}}
 @media(max-width:768px){.metrics{grid-template-columns:repeat(2,1fr);}.kelly-grid{grid-template-columns:1fr;}.target-bar{grid-template-columns:repeat(2,1fr);}.target-progress{grid-column:span 2;}}
 </style>
 </head>
@@ -163,7 +159,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
   <button class="tab" onclick="switchTab('kelly',this)">kelly sizer</button>
 </div>
 
-<!-- MARKETS -->
 <div class="panel active" id="panel-markets">
   <div class="metrics">
     <div class="metric"><div class="metric-label">total markets</div><div class="metric-value" id="m-total">—</div><div class="metric-sub">from Kalshi</div></div>
@@ -175,10 +170,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
   <div class="controls">
     <select class="ctrl-select" id="mkt-filter" onchange="renderMarkets()">
       <option value="all">all markets</option>
-      <option value="scored">has signal</option>
       <option value="bet">BET only</option>
       <option value="fade">FADE only</option>
-      <option value="insane">insane edge only</option>
+      <option value="insane">insane edge</option>
       <option value="short">closing soon</option>
     </select>
     <select class="ctrl-select" id="mkt-sort" onchange="renderMarkets()">
@@ -191,24 +185,22 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
     <table>
       <thead>
         <tr>
-          <th style="width:30%">market</th>
+          <th style="width:32%">market</th>
           <th style="width:9%">closes in</th>
           <th style="width:16%">crowd vs base rate</th>
           <th style="width:12%">signal</th>
           <th style="width:8%">edge</th>
-          <th style="width:10%">est. profit</th>
-          <th style="width:9%">volume</th>
-          <th style="width:6%">live</th>
+          <th style="width:11%">volume</th>
+          <th style="width:12%">source</th>
         </tr>
       </thead>
       <tbody id="markets-body">
-        <tr><td colspan="8"><div class="empty-state"><div class="big">loading...</div></div></td></tr>
+        <tr><td colspan="7"><div class="empty-state"><div class="big">loading...</div></div></td></tr>
       </tbody>
     </table>
   </div>
 </div>
 
-<!-- TRADES -->
 <div class="panel" id="panel-trades">
   <div class="metrics">
     <div class="metric"><div class="metric-label">signals logged</div><div class="metric-value" id="t-total">—</div><div class="metric-sub">all time</div></div>
@@ -222,34 +214,30 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
       <option value="all">all signals</option>
       <option value="LIVE">live bets only</option>
       <option value="PAPER">paper only</option>
-      <option value="BET">BET signals</option>
-      <option value="FADE">FADE signals</option>
     </select>
   </div>
   <div class="table-wrap">
     <table>
       <thead>
         <tr>
-          <th style="width:26%">market</th>
+          <th style="width:28%">market</th>
           <th style="width:10%">signal</th>
           <th style="width:13%">crowd vs base</th>
-          <th style="width:7%">edge</th>
-          <th style="width:8%">bet</th>
-          <th style="width:9%">est. profit</th>
-          <th style="width:8%">closes in</th>
-          <th style="width:7%">type</th>
-          <th style="width:6%">mode</th>
-          <th style="width:6%">time</th>
+          <th style="width:8%">edge</th>
+          <th style="width:9%">bet</th>
+          <th style="width:10%">est. profit</th>
+          <th style="width:8%">type</th>
+          <th style="width:7%">mode</th>
+          <th style="width:7%">time</th>
         </tr>
       </thead>
       <tbody id="trades-body">
-        <tr><td colspan="10"><div class="empty-state"><div class="big">waiting...</div><p>Bot scans every 3 minutes. First signals appear soon.</p></div></td></tr>
+        <tr><td colspan="9"><div class="empty-state"><div class="big">waiting...</div><p>Bot scans every few minutes. First signals appear soon.</p></div></td></tr>
       </tbody>
     </table>
   </div>
 </div>
 
-<!-- KELLY -->
 <div class="panel" id="panel-kelly">
   <div class="kelly-grid">
     <div class="kelly-card">
@@ -291,23 +279,19 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
       </div>
       <div style="margin-bottom:16px;">
         <div style="display:flex;justify-content:space-between;font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);margin-bottom:8px;"><span>bankroll at risk</span><span id="k-risk-pct">0%</span></div>
-        <div style="height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;"><div id="k-risk-bar" style="height:100%;border-radius:3px;transition:width .4s,background .3s;width:0%;background:var(--green);"></div></div>
+        <div style="height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;"><div id="k-risk-bar" style="height:100%;border-radius:3px;width:0%;background:var(--green);"></div></div>
       </div>
       <div class="kelly-verdict kv-skip" id="k-verdict">adjust the sliders to see your recommendation</div>
-      <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:8px;font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);line-height:1.8;">
-        <strong style="color:var(--text);display:block;margin-bottom:6px;">how kelly works</strong>
-        kelly = edge / odds. optimal fraction of bankroll per trade. half kelly = ~75% of growth with much lower risk. never exceed the recommendation.
-      </div>
     </div>
   </div>
 </div>
 
 <div class="footer">
-  <span>kalshi edge bot — auto trading active — $25 daily minimum target</span>
+  <span>kalshi edge bot — $25 daily minimum target</span>
   <span id="footer-time">—</span>
 </div>
-
 </div>
+
 <script>
 const BACKEND="https://kalshi-backend-production-8697.up.railway.app";
 let allMarkets=[],allTrades=[];
@@ -322,11 +306,11 @@ function switchTab(name,el){
 function fmt$(v){return '$'+parseFloat(v||0).toFixed(2);}
 function fmtVol(v){if(!v)return'—';if(v>=1000000)return'$'+(v/1000000).toFixed(1)+'M';if(v>=1000)return'$'+Math.round(v/1000)+'K';return'$'+v;}
 function fmtH(h){if(h==null)return'—';if(h<0)return'expired';if(h<1)return Math.round(h*60)+'m';if(h<24)return h.toFixed(1)+'h';return Math.round(h/24)+'d';}
-function setConn(ok){document.getElementById('conn-dot').className='dot '+(ok?'green':'red');document.getElementById('conn-text').textContent=ok?'connected':'disconnected';}
+function setConn(ok){document.getElementById('conn-dot').className='dot '+(ok?'green':'red');document.getElementById('conn-text').textContent=ok?'connected':'error';}
 
 async function loadStatus(){
   try{
-    const r=await fetch(`${BACKEND}/status`);
+    const r=await fetch(BACKEND+'/status');
     if(!r.ok)throw new Error(r.status);
     const s=await r.json();
     const profit=parseFloat(s.daily_profit||0);
@@ -338,7 +322,6 @@ async function loadStatus(){
     const isAuto=s.auto_enabled===true||s.auto_enabled==='true';
     const pct=Math.min(100,(profit/target)*100);
     const hit=profit>=target;
-
     document.getElementById('daily-profit').textContent=fmt$(profit);
     document.getElementById('daily-target').textContent=fmt$(target);
     document.getElementById('daily-trades').textContent=trades;
@@ -347,28 +330,15 @@ async function loadStatus(){
     document.getElementById('t-spent-sub').textContent='of '+fmt$(limit)+' limit';
     document.getElementById('t-remain').textContent=fmt$(Math.max(0,limit-spent));
     document.getElementById('t-auto').textContent=autoCount;
-
     const fill=document.getElementById('tp-fill');
     fill.style.width=pct+'%';
     fill.style.background=hit?'var(--green)':pct>60?'var(--amber)':'var(--red)';
-
     const badge=document.getElementById('target-badge');
-    if(hit){badge.className='target-badge tb-hit';badge.textContent='✓ $25 target hit — keep going!';}
+    if(hit){badge.className='target-badge tb-hit';badge.textContent='✓ $25 target hit!';}
     else{badge.className='target-badge tb-miss';badge.textContent='$'+(target-profit).toFixed(2)+' to go';}
-
     document.getElementById('mode-tag').textContent=isAuto?'LIVE':'PAPER MODE';
     document.getElementById('mode-tag').style.color=isAuto?'var(--green)':'var(--amber)';
-
-    const liveTeams=parseInt(s.live_teams||0);
-    const liveCities=parseInt(s.live_cities||0);
-    document.getElementById('trades-notice').innerHTML=`<div class="notice notice-ok">
-      <span class="live-dot"></span>bot scanning every ${s.scan_interval}s —
-      ${liveTeams} live sports teams loaded —
-      ${liveCities} cities weather loaded —
-      max bet: ${fmt$(s.max_bet)} —
-      daily limit: ${fmt$(s.daily_limit)}
-    </div>`;
-
+    document.getElementById('trades-notice').innerHTML='<div class="notice notice-'+(isAuto?'ok':'warn')+'">'+(isAuto?'live betting ON — real money being placed':'paper mode — no real money spent. signals are being logged.')+' max bet: '+fmt$(s.max_bet)+' | daily limit: '+fmt$(s.daily_limit)+'</div>';
     document.getElementById('footer-time').textContent='updated '+new Date().toLocaleTimeString();
     setConn(true);
   }catch(e){setConn(false);}
@@ -376,28 +346,22 @@ async function loadStatus(){
 
 async function loadMarkets(){
   try{
-    const r=await fetch(`${BACKEND}/markets`);
+    const r=await fetch(BACKEND+'/markets');
     if(!r.ok)throw new Error(r.status);
     const json=await r.json();
-    allMarkets=(json.markets||[]).filter(m=>(m.mid_price||0)>0);
-
-    const scored=allMarkets.filter(m=>m.edge&&m.edge.signal!=='SKIP');
+    allMarkets=json.markets||[];
     const bets=allMarkets.filter(m=>m.edge&&m.edge.signal==='BET').length;
     const fades=allMarkets.filter(m=>m.edge&&m.edge.signal==='FADE').length;
     const insane=allMarkets.filter(m=>m.insane).length;
-
     document.getElementById('m-total').textContent=allMarkets.length;
     document.getElementById('m-bet').textContent=bets;
     document.getElementById('m-fade').textContent=fades;
     document.getElementById('m-time').textContent=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-    document.getElementById('markets-notice').innerHTML=`<div class="notice notice-ok">
-      ${allMarkets.length} markets loaded — ${scored.length} scored — ${bets} BET — ${fades} FADE — ${insane} insane edge
-    </div>`;
-
+    document.getElementById('markets-notice').innerHTML='<div class="notice notice-ok">'+allMarkets.length+' markets loaded — '+bets+' BET — '+fades+' FADE — '+insane+' insane edge auto-bet</div>';
     renderMarkets();
     setConn(true);
   }catch(e){
-    document.getElementById('markets-notice').innerHTML=`<div class="notice notice-err">cannot reach backend: ${e.message}</div>`;
+    document.getElementById('markets-notice').innerHTML='<div class="notice notice-err">cannot reach backend: '+e.message+'</div>';
     setConn(false);
   }
 }
@@ -405,120 +369,78 @@ async function loadMarkets(){
 function renderMarkets(){
   const filter=document.getElementById('mkt-filter').value;
   const sort=document.getElementById('mkt-sort').value;
-
   let data=allMarkets.filter(m=>{
-    if(filter==='scored') return m.edge&&m.edge.signal!=='SKIP';
-    if(filter==='bet')    return m.edge&&m.edge.signal==='BET';
-    if(filter==='fade')   return m.edge&&m.edge.signal==='FADE';
-    if(filter==='insane') return m.insane;
-    if(filter==='short')  return m.hours_left!=null&&m.hours_left>0&&m.hours_left<=24;
+    if(filter==='bet')   return m.edge&&m.edge.signal==='BET';
+    if(filter==='fade')  return m.edge&&m.edge.signal==='FADE';
+    if(filter==='insane')return m.insane;
+    if(filter==='short') return m.hours_left!=null&&m.hours_left>0&&m.hours_left<=24;
     return true;
   });
-
   data.sort((a,b)=>{
-    if(sort==='edge')   return((b.raw_edge||0)-(a.raw_edge||0));
-    if(sort==='volume') return((b.volume_24h||b.volume||0)-(a.volume_24h||a.volume||0));
+    if(sort==='edge')   return(b.raw_edge||0)-(a.raw_edge||0);
+    if(sort==='volume') return(b.volume_24h||b.volume||0)-(a.volume_24h||a.volume||0);
     const ah=a.hours_left!=null?a.hours_left:9999;
     const bh=b.hours_left!=null?b.hours_left:9999;
     return ah-bh;
   });
-
   const tbody=document.getElementById('markets-body');
   if(!data.length){
-    tbody.innerHTML=`<tr><td colspan="8"><div class="empty-state"><div class="big">no matches</div><p>try "all markets" filter</p></div></td></tr>`;
+    tbody.innerHTML='<tr><td colspan="7"><div class="empty-state"><div class="big">no markets</div><p>backend may still be loading — wait 30 seconds and refresh</p></div></td></tr>';
     return;
   }
-
-  tbody.innerHTML=data.slice(0,80).map(m=>{
+  tbody.innerHTML=data.slice(0,100).map(m=>{
     const crowd=m.mid_price||0;
     const br=m.base_rate?m.base_rate.rate:null;
-    const title=(m.title||m.ticker||'').slice(0,46)+((m.title||'').length>46?'…':'');
+    const title=(m.title||m.ticker||'').slice(0,48)+((m.title||'').length>48?'…':'');
     const hl=m.hours_left;
     const urgColor=hl!=null&&hl<3?'var(--red)':hl!=null&&hl<12?'var(--amber)':'var(--muted)';
-
-    const priceCell=br!=null?`
-      <div class="price-col">
-        <div class="price-row"><span class="p-lbl">C</span><div class="mini-bar"><div class="mini-fill" style="width:${Math.round(crowd*100)}%;background:#60a5fa"></div></div><span class="p-num" style="color:#60a5fa">${Math.round(crowd*100)}¢</span></div>
-        <div class="price-row"><span class="p-lbl">B</span><div class="mini-bar"><div class="mini-fill" style="width:${Math.round(br*100)}%;background:#4ade80"></div></div><span class="p-num" style="color:#4ade80">${Math.round(br*100)}%</span></div>
-      </div>`:`<span style="font-family:'DM Mono',monospace;font-size:12px;color:var(--muted)">${Math.round(crowd*100)}¢</span>`;
-
+    const priceCell=br!=null?'<div class="price-col"><div class="price-row"><span class="p-lbl">C</span><div class="mini-bar"><div class="mini-fill" style="width:'+Math.round(crowd*100)+'%;background:#60a5fa"></div></div><span class="p-num" style="color:#60a5fa">'+Math.round(crowd*100)+'¢</span></div><div class="price-row"><span class="p-lbl">B</span><div class="mini-bar"><div class="mini-fill" style="width:'+Math.round(br*100)+'%;background:#4ade80"></div></div><span class="p-num" style="color:#4ade80">'+Math.round(br*100)+'%</span></div></div>':'<span style="font-family:\'DM Mono\',monospace;font-size:12px;color:var(--muted)">'+Math.round(crowd*100)+'¢</span>';
     let sigBadge='<span class="badge b-none">no data</span>';
     let edgeStr='—';
     if(m.edge){
-      if(m.insane) sigBadge=`<span class="badge b-insane">⚡ AUTO BET</span>`;
-      else if(m.edge.signal==='BET')  sigBadge=`<span class="badge b-bet">BET YES</span>`;
-      else if(m.edge.signal==='FADE') sigBadge=`<span class="badge b-fade">FADE NO</span>`;
-      else sigBadge=`<span class="badge b-skip">SKIP</span>`;
-      const col=m.edge.signal==='BET'?'var(--green)':m.edge.signal==='FADE'?'var(--red)':'var(--muted)';
-      if(m.edge.signal!=='SKIP') edgeStr=`<span style="font-family:'DM Mono',monospace;color:${col}">+${m.edge.magnitude}%</span>`;
+      if(m.insane) sigBadge='<span class="badge b-insane">⚡ auto bet</span>';
+      else if(m.edge.signal==='BET')  sigBadge='<span class="badge b-bet">BET YES</span>';
+      else if(m.edge.signal==='FADE') sigBadge='<span class="badge b-fade">FADE NO</span>';
+      else sigBadge='<span class="badge b-skip">skip</span>';
+      if(m.edge.signal!=='SKIP'){
+        const col=m.edge.signal==='BET'?'var(--green)':'var(--red)';
+        edgeStr='<span style="font-family:\'DM Mono\',monospace;color:'+col+'">+'+m.edge.magnitude+'%</span>';
+      }
     }
-
-    const estP=br!=null&&m.edge&&m.edge.signal!=='SKIP'?'~$'+(25*Math.abs(crowd-br)/(crowd<br?(1-crowd):crowd)).toFixed(2):'—';
-    const liveTag=m.base_rate&&m.base_rate.live?'<span class="live-dot"></span>live':'—';
-
-    return`<tr>
-      <td><div class="market-name">${title}</div><div class="market-ticker">${m.ticker||''}</div></td>
-      <td style="font-family:'DM Mono',monospace;font-size:12px;color:${urgColor}">${fmtH(hl)}</td>
-      <td>${priceCell}</td>
-      <td>${sigBadge}</td>
-      <td>${edgeStr}</td>
-      <td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--green)">${estP}</td>
-      <td style="font-size:12px;color:var(--muted)">${fmtVol(m.volume_24h||m.volume||0)}</td>
-      <td style="font-size:11px">${liveTag}</td>
-    </tr>`;
+    const src=m.base_rate?'<span style="font-size:11px;font-family:\'DM Mono\',monospace;color:var(--muted2)">'+(m.base_rate.live?'⚡ ':'')+(m.base_rate.source||'')+'</span>':'—';
+    return'<tr><td><div class="market-name">'+title+'</div><div class="market-ticker">'+(m.ticker||'')+'</div></td><td style="font-family:\'DM Mono\',monospace;font-size:12px;color:'+urgColor+'">'+fmtH(hl)+'</td><td>'+priceCell+'</td><td>'+sigBadge+'</td><td>'+edgeStr+'</td><td style="font-size:12px;color:var(--muted)">'+fmtVol(m.volume_24h||m.volume||0)+'</td><td>'+src+'</td></tr>';
   }).join('');
 }
 
 async function loadTrades(){
   try{
-    const r=await fetch(`${BACKEND}/trades`);
+    const r=await fetch(BACKEND+'/trades');
     if(!r.ok)throw new Error(r.status);
     const json=await r.json();
     allTrades=json.trades||[];
     document.getElementById('t-total').textContent=allTrades.length;
     renderTrades();
-  }catch(e){
-    document.getElementById('trades-body').innerHTML=`<tr><td colspan="10"><div class="empty-state"><div class="big">error</div><p>${e.message}</p></div></td></tr>`;
-  }
+  }catch(e){}
 }
 
 function renderTrades(){
   const filter=document.getElementById('trade-filter').value;
-  let data=allTrades.filter(t=>{
-    if(filter==='LIVE')  return t.status==='LIVE';
-    if(filter==='PAPER') return t.status==='PAPER';
-    if(filter==='BET')   return t.signal==='BET';
-    if(filter==='FADE')  return t.signal==='FADE';
-    return true;
-  });
+  let data=filter==='all'?allTrades:allTrades.filter(t=>t.status===filter);
   const tbody=document.getElementById('trades-body');
   if(!data.length){
-    tbody.innerHTML=`<tr><td colspan="10"><div class="empty-state"><div class="big">waiting...</div><p>Bot scans every 3 minutes. Signals appear shortly.</p></div></td></tr>`;
+    tbody.innerHTML='<tr><td colspan="9"><div class="empty-state"><div class="big">waiting...</div><p>Bot scans every few minutes. Signals appear shortly.</p></div></td></tr>';
     return;
   }
   tbody.innerHTML=data.slice(0,100).map(t=>{
-    const sigBadge=t.signal==='BET'?`<span class="badge b-bet">BET YES</span>`:`<span class="badge b-fade">FADE NO</span>`;
-    const modeBadge=t.status==='LIVE'?`<span class="badge b-live">live</span>`:`<span class="badge b-paper">paper</span>`;
-    const typeBadge=t.insane_edge?`<span class="badge b-insane">⚡ auto</span>`:`<span class="badge b-skip">normal</span>`;
+    const sigBadge=t.signal==='BET'?'<span class="badge b-bet">BET YES</span>':'<span class="badge b-fade">FADE NO</span>';
+    const modeBadge=t.status==='LIVE'?'<span class="badge b-live">live</span>':'<span class="badge b-paper">paper</span>';
+    const typeBadge=t.insane_edge?'<span class="badge b-insane">⚡ auto</span>':'<span class="badge b-skip">normal</span>';
     const col=t.signal==='BET'?'var(--green)':'var(--red)';
-    const liveLabel=t.live_data?'<span class="live-dot"></span>':'';
-    return`<tr>
-      <td><div class="market-name">${(t.title||t.ticker||'').slice(0,34)}…</div><div class="market-ticker">${t.ticker||''}</div></td>
-      <td>${sigBadge}</td>
-      <td style="font-family:'DM Mono',monospace;font-size:12px;">${liveLabel}<span style="color:#60a5fa">${t.crowd||'—'}¢</span><span style="color:var(--muted2)"> / </span><span style="color:#4ade80">${t.base_rate||'—'}%</span></td>
-      <td style="font-family:'DM Mono',monospace;color:${col}">+${t.edge_pct||0}%</td>
-      <td style="font-family:'DM Mono',monospace;">${fmt$(t.bet_amt||0)}</td>
-      <td style="font-family:'DM Mono',monospace;color:var(--green)">${t.est_profit?'~$'+t.est_profit:'—'}</td>
-      <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)">${fmtH(t.hours_left)}</td>
-      <td>${typeBadge}</td>
-      <td>${modeBadge}</td>
-      <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted2)">${t.time||'—'}</td>
-    </tr>`;
+    return'<tr><td><div class="market-name">'+(t.title||t.ticker||'').slice(0,36)+'</div><div class="market-ticker">'+(t.ticker||'')+'</div></td><td>'+sigBadge+'</td><td style="font-family:\'DM Mono\',monospace;font-size:12px;"><span style="color:#60a5fa">'+(t.crowd||'—')+'¢</span> / <span style="color:#4ade80">'+(t.base_rate||'—')+'%</span></td><td style="font-family:\'DM Mono\',monospace;color:'+col+'">+'+(t.edge_pct||0)+'%</td><td style="font-family:\'DM Mono\',monospace;">'+fmt$(t.bet_amt||0)+'</td><td style="font-family:\'DM Mono\',monospace;color:var(--green)">'+(t.est_profit?'~$'+t.est_profit:'—')+'</td><td>'+typeBadge+'</td><td>'+modeBadge+'</td><td style="font-family:\'DM Mono\',monospace;font-size:11px;color:var(--muted2)">'+(t.time||'—')+'</td></tr>';
   }).join('');
 }
 
 function kellyCalc(pt,pm,side){if(side==='FADE'){pt=1-pt;pm=1-pm;}const b=(1-pm)/pm;return Math.max(0,(b*pt-(1-pt))/b);}
-
 function calcKelly(){
   const bankroll=+document.getElementById('k-bankroll').value;
   const crowd=+document.getElementById('k-crowd').value;
@@ -539,22 +461,14 @@ function calcKelly(){
   document.getElementById('k-win').textContent=kUsed>0?'+$'+payout.toFixed(0):'—';
   document.getElementById('k-loss').textContent=kUsed>0?'-$'+bet.toFixed(0):'—';
   document.getElementById('k-risk-pct').textContent=riskPct.toFixed(1)+'%';
-  const bar=document.getElementById('k-risk-bar');
-  bar.style.width=riskPct+'%';
-  bar.style.background=riskPct>20?'var(--red)':riskPct>10?'var(--amber)':'var(--green)';
+  document.getElementById('k-risk-bar').style.width=riskPct+'%';
+  document.getElementById('k-risk-bar').style.background=riskPct>20?'var(--red)':riskPct>10?'var(--amber)':'var(--green)';
   const verdict=document.getElementById('k-verdict');
   if(side==='SKIP'||kUsed===0){verdict.className='kelly-verdict kv-skip';verdict.textContent='no meaningful edge — skip this market.';}
-  else if(side==='BET'){verdict.className='kelly-verdict kv-bet';verdict.innerHTML=`bet YES $${bet.toFixed(0)} — base rate (${base}%) is ${Math.round(Math.abs(diff)*100)}pts above crowd (${crowd}¢). win profit: +$${payout.toFixed(0)}.`;}
-  else{verdict.className='kelly-verdict kv-fade';verdict.innerHTML=`fade NO $${bet.toFixed(0)} — crowd prices YES at ${crowd}¢ but base rate is only ${base}%. win profit: +$${payout.toFixed(0)}.`;}
+  else if(side==='BET'){verdict.className='kelly-verdict kv-bet';verdict.innerHTML='bet YES $'+bet.toFixed(0)+' — base rate ('+base+'%) is '+Math.round(Math.abs(diff)*100)+'pts above crowd ('+crowd+'¢). win profit: +$'+payout.toFixed(0)+'.';}
+  else{verdict.className='kelly-verdict kv-fade';verdict.innerHTML='fade NO $'+bet.toFixed(0)+' — crowd prices YES at '+crowd+'¢ but base rate is only '+base+'%. win profit: +$'+payout.toFixed(0)+'.';}
 }
-
-function loadKelly(crowd,base){
-  document.getElementById('k-crowd').value=crowd;
-  document.getElementById('k-base').value=base;
-  switchTab('kelly',document.querySelectorAll('.tab')[2]);
-  calcKelly();
-}
-
+function loadKelly(crowd,base){document.getElementById('k-crowd').value=crowd;document.getElementById('k-base').value=base;switchTab('kelly',document.querySelectorAll('.tab')[2]);calcKelly();}
 async function loadAll(){await Promise.all([loadStatus(),loadMarkets(),loadTrades()]);}
 calcKelly();
 loadAll();
