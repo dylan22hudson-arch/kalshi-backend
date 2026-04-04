@@ -1,9 +1,9 @@
-from flask import Flask, jsonify, send_file
+from flask import Flask, jsonify
 from flask_cors import CORS
 import requests, os, re, time, threading, logging
 from datetime import datetime, date
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder=".", static_url_path="")
 CORS(app)
 logging.basicConfig(level=logging.INFO)
 
@@ -147,7 +147,6 @@ def scan_and_trade():
         try:
             logging.info("── Scanning 24h markets ──")
             reset_daily_if_needed()
-
             r = requests.get(
                 f"{BASE_URL}/markets?limit=200&status=open",
                 headers=get_headers()
@@ -164,82 +163,67 @@ def scan_and_trade():
                 mid    = ((bid + ask) / 2) / 100 if bid and ask else (bid or ask) / 100
                 if mid <= 0:
                     continue
-
                 br = get_base_rate(title)
                 if not br:
                     continue
-
                 edge = compute_edge(mid, br["rate"])
                 if edge["signal"] == "SKIP":
                     continue
-
-                k      = kelly(br["rate"], mid, edge["direction"])
-                k_adj  = k * KELLY_FRAC
-                bet_$  = min(BANKROLL * k_adj, MAX_BET)
-                bet_$  = round(bet_$, 2)
-
-                if bet_$ < 1.0:
+                k       = kelly(br["rate"], mid, edge["direction"])
+                k_adj   = k * KELLY_FRAC
+                bet_amt = min(BANKROLL * k_adj, MAX_BET)
+                bet_amt = round(bet_amt, 2)
+                if bet_amt < 1.0:
                     continue
-
-                if daily_state["spent"] + bet_$ > DAILY_LIMIT:
+                if daily_state["spent"] + bet_amt > DAILY_LIMIT:
                     logging.info(f"Daily spend limit hit — skipping {ticker}")
                     break
-
                 if any(t["ticker"] == ticker and t["date"] == str(date.today()) for t in trade_log):
                     continue
-
-                est_profit = estimate_profit(bet_$, mid, edge["direction"])
-
+                est_profit = estimate_profit(bet_amt, mid, edge["direction"])
                 log_entry = {
-                    "date":        str(date.today()),
-                    "time":        datetime.now().strftime("%H:%M:%S"),
-                    "ticker":      ticker,
-                    "title":       title[:60],
-                    "signal":      edge["signal"],
-                    "direction":   edge["direction"],
-                    "edge_pct":    edge["magnitude"],
-                    "crowd":       round(mid * 100),
-                    "base_rate":   round(br["rate"] * 100),
-                    "bet_$":       bet_$,
-                    "est_profit":  est_profit,
-                    "hours_left":  get_hours_left(m),
-                    "status":      "PAPER" if not AUTO_ENABLED else "LIVE",
-                    "result":      None
+                    "date":       str(date.today()),
+                    "time":       datetime.now().strftime("%H:%M:%S"),
+                    "ticker":     ticker,
+                    "title":      title[:60],
+                    "signal":     edge["signal"],
+                    "direction":  edge["direction"],
+                    "edge_pct":   edge["magnitude"],
+                    "crowd":      round(mid * 100),
+                    "base_rate":  round(br["rate"] * 100),
+                    "bet_amt":    bet_amt,
+                    "est_profit": est_profit,
+                    "hours_left": get_hours_left(m),
+                    "status":     "PAPER" if not AUTO_ENABLED else "LIVE",
+                    "result":     None
                 }
-
                 if AUTO_ENABLED:
                     price_cents = round(mid * 100) if edge["direction"] == "YES" else round((1 - mid) * 100)
-                    quantity    = max(1, int(bet_$ / (price_cents / 100)))
+                    quantity    = max(1, int(bet_amt / (price_cents / 100)))
                     order       = place_order(ticker, edge["direction"], price_cents, quantity)
                     log_entry["result"] = order
-                    daily_state["spent"]       += bet_$
+                    daily_state["spent"]       += bet_amt
                     daily_state["profit"]      += est_profit
                     daily_state["trade_count"] += 1
                     daily_state["target_hit"]   = daily_state["profit"] >= DAILY_TARGET
-                    logging.info(f"PLACED {edge['direction']} {ticker} ${bet_$:.2f} est_profit=${est_profit:.2f}")
+                    logging.info(f"PLACED {edge['direction']} {ticker} ${bet_amt:.2f}")
                 else:
-                    logging.info(f"PAPER {edge['direction']} {ticker} ${bet_$:.2f} est_profit=${est_profit:.2f}")
+                    logging.info(f"PAPER {edge['direction']} {ticker} ${bet_amt:.2f}")
                     daily_state["trade_count"] += 1
-
                 trade_log.append(log_entry)
                 if len(trade_log) > 500:
                     trade_log.pop(0)
-
         except Exception as e:
             logging.error(f"Scan error: {e}")
-
         time.sleep(SCAN_INTERVAL)
 
 @app.route("/")
 def index():
-    return send_file("dashboard.html")
+    return app.send_static_file("dashboard.html")
 
 @app.route("/markets")
 def markets():
-    r = requests.get(
-        f"{BASE_URL}/markets?limit=200&status=open",
-        headers=get_headers()
-    )
+    r = requests.get(f"{BASE_URL}/markets?limit=200&status=open", headers=get_headers())
     data = r.json()
     result = []
     for m in data.get("markets", []):
