@@ -1,7 +1,7 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
 import requests, os, re, time, threading, logging
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 
 app = Flask(__name__, static_folder=".", static_url_path="")
 CORS(app)
@@ -32,11 +32,10 @@ daily_state = {
     "trade_count": 0,
     "auto_count":  0
 }
-trade_log   = []
-live_odds   = {}   # cache: team_name -> win_probability
-live_weather = {}  # cache: city -> rain_probability
+trade_log    = []
+live_odds    = {}
+live_weather = {}
 
-# ── Sports odds cache (refreshed every 10 min) ─────────────────
 SPORTS = [
     "basketball_nba",
     "americanfootball_nfl",
@@ -61,7 +60,6 @@ CITY_COORDS = {
 }
 
 def refresh_sports_odds():
-    """Pull live win probabilities from The Odds API."""
     global live_odds
     if not ODDS_API_KEY:
         return
@@ -70,31 +68,21 @@ def refresh_sports_odds():
         try:
             r = requests.get(
                 f"{ODDS_URL}/sports/{sport}/odds",
-                params={
-                    "apiKey":      ODDS_API_KEY,
-                    "regions":     "us",
-                    "markets":     "h2h",
-                    "oddsFormat":  "decimal"
-                },
+                params={"apiKey": ODDS_API_KEY, "regions": "us", "markets": "h2h", "oddsFormat": "decimal"},
                 timeout=10
             )
             if r.status_code != 200:
                 continue
-            games = r.json()
-            for game in games:
+            for game in r.json():
                 home = game.get("home_team", "")
                 away = game.get("away_team", "")
-                bookmakers = game.get("bookmakers", [])
-                if not bookmakers:
-                    continue
-                # Average implied probability across bookmakers
                 home_probs, away_probs = [], []
-                for bk in bookmakers:
+                for bk in game.get("bookmakers", []):
                     for market in bk.get("markets", []):
                         if market["key"] != "h2h":
                             continue
                         for outcome in market["outcomes"]:
-                            dec = outcome["price"]
+                            dec  = outcome["price"]
                             prob = 1 / dec if dec > 0 else 0
                             if outcome["name"] == home:
                                 home_probs.append(prob)
@@ -103,66 +91,46 @@ def refresh_sports_odds():
                 if home_probs and away_probs:
                     avg_home = sum(home_probs) / len(home_probs)
                     avg_away = sum(away_probs) / len(away_probs)
-                    # Normalize to remove vig
-                    total = avg_home + avg_away
+                    total    = avg_home + avg_away
                     new_odds[home.lower()] = round(avg_home / total, 4)
                     new_odds[away.lower()] = round(avg_away / total, 4)
-            logging.info(f"Loaded {len(games)} games from {sport}")
         except Exception as e:
-            logging.error(f"Odds API error for {sport}: {e}")
+            logging.error(f"Odds API error {sport}: {e}")
     live_odds = new_odds
-    logging.info(f"Sports odds cache: {len(live_odds)} teams loaded")
+    logging.info(f"Sports odds: {len(live_odds)} teams loaded")
 
 def refresh_weather():
-    """Pull rain probabilities for major cities."""
     global live_weather
     new_weather = {}
     for city, (lat, lon) in CITY_COORDS.items():
         try:
             r = requests.get(
                 WEATHER_URL,
-                params={
-                    "latitude":                  lat,
-                    "longitude":                 lon,
-                    "hourly":                    "precipitation_probability",
-                    "forecast_days":             1,
-                    "timezone":                  "auto"
-                },
+                params={"latitude": lat, "longitude": lon, "hourly": "precipitation_probability", "forecast_days": 1, "timezone": "auto"},
                 timeout=10
             )
             if r.status_code != 200:
                 continue
-            data  = r.json()
-            probs = data.get("hourly", {}).get("precipitation_probability", [])
+            probs = r.json().get("hourly", {}).get("precipitation_probability", [])
             if probs:
-                avg   = sum(probs) / len(probs)
-                new_weather[city] = round(avg / 100, 4)
+                new_weather[city] = round(sum(probs) / len(probs) / 100, 4)
         except Exception as e:
-            logging.error(f"Weather error for {city}: {e}")
+            logging.error(f"Weather error {city}: {e}")
     live_weather = new_weather
-    logging.info(f"Weather cache: {len(live_weather)} cities loaded")
+    logging.info(f"Weather: {len(live_weather)} cities loaded")
 
 def get_headers():
     return {"Authorization": f"Bearer {KALSHI_KEY}", "Content-Type": "application/json"}
 
 def extract_team(title):
-    """Try to extract a team name from a Kalshi market title."""
     t = title.lower()
-    patterns = [
-        r"will the (.+?) win",
-        r"will (.+?) beat",
-        r"will (.+?) defeat",
-        r"(.+?) vs\.? (.+?) —",
-        r"^(.+?) to win",
-    ]
-    for pat in patterns:
+    for pat in [r"will the (.+?) win", r"will (.+?) beat", r"will (.+?) defeat", r"^(.+?) to win"]:
         m = re.search(pat, t)
         if m:
             return m.group(1).strip()
     return None
 
 def extract_city(title):
-    """Try to extract a city from a weather market title."""
     t = title.lower()
     for city in CITY_COORDS:
         if city in t:
@@ -170,37 +138,24 @@ def extract_city(title):
     return None
 
 def get_live_base_rate(title):
-    """
-    Try to get a LIVE base rate from real APIs.
-    Returns (rate, source) or None.
-    """
     t = title.lower()
-
-    # Sports — match team name to live odds
-    if any(w in t for w in ["win", "beat", "defeat", "cover"]):
+    if any(w in t for w in ["win", "beat", "defeat"]):
         team = extract_team(title)
         if team and live_odds:
-            # Fuzzy match team name
             for known_team, prob in live_odds.items():
                 if team in known_team or known_team in team:
                     return prob, f"Live odds ({known_team})"
-            # Try word-by-word match
-            words = team.split()
-            for word in words:
+            for word in team.split():
                 if len(word) > 4:
                     for known_team, prob in live_odds.items():
                         if word in known_team:
                             return prob, f"Live odds (~{known_team})"
-
-    # Weather — match city to live weather
     if any(w in t for w in ["rain", "precipitation", "snow", "storm"]):
         city = extract_city(title)
         if city and city in live_weather:
             return live_weather[city], f"Live weather ({city})"
-
     return None, None
 
-# ── Static base rates (fallback) ──────────────────────────────
 STATIC_BASE_RATES = {
     "spx_up":    {"pattern": r"s.?p.*(above|over|higher|up|close above|end above)",   "rate": 0.52, "source": "S&P daily 2000-2024"},
     "spx_down":  {"pattern": r"s.?p.*(below|under|lower|down|close below|end below)", "rate": 0.48, "source": "S&P daily 2000-2024"},
@@ -224,13 +179,9 @@ STATIC_BASE_RATES = {
 }
 
 def get_base_rate(title):
-    """Get best available base rate — live API first, static fallback second."""
-    # Try live data first
     live_rate, live_source = get_live_base_rate(title)
     if live_rate is not None:
         return {"rate": live_rate, "source": live_source, "live": True}
-
-    # Fall back to static rates
     t = (title or "").lower()
     for key, data in STATIC_BASE_RATES.items():
         if re.search(data["pattern"], t):
@@ -242,29 +193,30 @@ def is_short_dated(market):
     if not close_ts:
         return False
     try:
-        from datetime import timezone
         if isinstance(close_ts, str):
             close_ts = close_ts.replace("Z", "+00:00")
             close_dt = datetime.fromisoformat(close_ts)
         else:
             close_dt = datetime.fromtimestamp(close_ts, tz=timezone.utc)
-        now = datetime.now(timezone.utc)
-        return 0 < (close_dt - now).total_seconds() / 3600 <= MAX_HOURS
+        now        = datetime.now(timezone.utc)
+        hours_left = (close_dt - now).total_seconds() / 3600
+        return 0 < hours_left <= MAX_HOURS
     except:
         return False
 
 def get_hours_left(market):
+    close_ts = market.get("close_time") or market.get("expiration_time")
+    if not close_ts:
+        return None
     try:
-        from datetime import timezone
-        close_ts = market.get("close_time") or market.get("expiration_time")
-        if not close_ts:
-            return None
         if isinstance(close_ts, str):
             close_ts = close_ts.replace("Z", "+00:00")
             close_dt = datetime.fromisoformat(close_ts)
         else:
             close_dt = datetime.fromtimestamp(close_ts, tz=timezone.utc)
-        return round((datetime.now(timezone.utc) - close_dt).total_seconds() / -3600, 1)
+        now   = datetime.now(timezone.utc)
+        hours = (close_dt - now).total_seconds() / 3600
+        return round(hours, 1)
     except:
         return None
 
@@ -316,13 +268,9 @@ def scan_and_trade():
     while True:
         try:
             now_ts = time.time()
-
-            # Refresh sports odds every 10 minutes
             if now_ts - last_odds_refresh > 600:
                 refresh_sports_odds()
                 last_odds_refresh = now_ts
-
-            # Refresh weather every 30 minutes
             if now_ts - last_weather_refresh > 1800:
                 refresh_weather()
                 last_weather_refresh = now_ts
@@ -330,15 +278,12 @@ def scan_and_trade():
             logging.info("── Scanning 24h markets ──")
             reset_daily_if_needed()
 
-            r = requests.get(
-                f"{BASE_URL}/markets?limit=200&status=open",
-                headers=get_headers()
-            )
+            r       = requests.get(f"{BASE_URL}/markets?limit=200&status=open", headers=get_headers())
             markets = r.json().get("markets", [])
-            short_markets = [m for m in markets if is_short_dated(m)]
-            logging.info(f"{len(short_markets)} markets closing within {MAX_HOURS}h")
+            short   = [m for m in markets if is_short_dated(m)]
+            logging.info(f"Found {len(short)} markets closing within {MAX_HOURS}h (total: {len(markets)})")
 
-            for m in short_markets:
+            for m in short:
                 ticker = m.get("ticker", "")
                 title  = m.get("title", "")
                 bid    = m.get("yes_bid", 0) or 0
@@ -356,8 +301,7 @@ def scan_and_trade():
                     continue
 
                 raw_edge = abs(mid - br["rate"])
-                k        = kelly(br["rate"], mid, edge["direction"])
-                bet_amt  = round(min(BANKROLL * k * KELLY_FRAC, MAX_BET), 2)
+                bet_amt  = round(min(BANKROLL * kelly(br["rate"], mid, edge["direction"]) * KELLY_FRAC, MAX_BET), 2)
 
                 if bet_amt < 1.0:
                     continue
@@ -367,12 +311,12 @@ def scan_and_trade():
                 if any(t["ticker"] == ticker and t["date"] == str(date.today()) for t in trade_log):
                     continue
 
-                est_profit    = estimate_profit(bet_amt, mid, edge["direction"])
-                is_insane     = raw_edge >= AUTO_TRIGGER_EDGE
-                should_bet    = is_insane or AUTO_ENABLED
+                est_profit = estimate_profit(bet_amt, mid, edge["direction"])
+                is_insane  = raw_edge >= AUTO_TRIGGER_EDGE
+                should_bet = is_insane or AUTO_ENABLED
 
                 if is_insane:
-                    logging.info(f"INSANE EDGE {ticker} edge={round(raw_edge*100)}% AUTO BETTING")
+                    logging.info(f"INSANE EDGE {ticker} {round(raw_edge*100)}% — AUTO BETTING")
 
                 log_entry = {
                     "date":        str(date.today()),
@@ -425,7 +369,7 @@ def index():
 
 @app.route("/markets")
 def markets():
-    r = requests.get(f"{BASE_URL}/markets?limit=200&status=open", headers=get_headers())
+    r      = requests.get(f"{BASE_URL}/markets?limit=200&status=open", headers=get_headers())
     result = []
     for m in r.json().get("markets", []):
         bid  = m.get("yes_bid", 0) or 0
