@@ -1,564 +1,431 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kalshi Edge Bot</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-<style>
-:root{--bg:#0a0a0a;--surface:#111;--surface2:#1a1a1a;--border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.14);--text:#f0f0f0;--muted:#888;--muted2:#444;--green:#4ade80;--green-bg:rgba(74,222,128,0.08);--green-border:rgba(74,222,128,0.2);--red:#f87171;--red-bg:rgba(248,113,113,0.08);--red-border:rgba(248,113,113,0.2);--amber:#fbbf24;--amber-bg:rgba(251,191,36,0.08);--blue:#60a5fa;--blue-bg:rgba(96,165,250,0.08);}
-*{box-sizing:border-box;margin:0;padding:0;}
-body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.5;min-height:100vh;}
-body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(255,255,255,0.015) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.015) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
-.app{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:0 24px 60px;}
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:24px 0 20px;border-bottom:1px solid var(--border);margin-bottom:28px;flex-wrap:wrap;gap:12px;}
-.logo-text{font-family:'Instrument Serif',serif;font-size:22px;letter-spacing:-0.02em;}
-.logo-tag{font-family:'DM Mono',monospace;font-size:11px;color:var(--amber);background:var(--amber-bg);border:1px solid rgba(251,191,36,.2);padding:2px 8px;border-radius:4px;margin-left:10px;}
-.topbar-right{display:flex;align-items:center;gap:10px;}
-.status-pill{display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:99px;border:1px solid var(--border2);font-size:12px;font-family:'DM Mono',monospace;color:var(--muted);}
-.dot{width:7px;height:7px;border-radius:50%;background:var(--muted2);flex-shrink:0;}
-.dot.green{background:var(--green);box-shadow:0 0 6px var(--green);}
-.dot.red{background:var(--red);}
-.topbar-btn{padding:6px 14px;border:1px solid var(--border2);border-radius:6px;background:transparent;color:var(--muted);font-size:12px;font-family:'DM Mono',monospace;cursor:pointer;transition:all .15s;}
-.topbar-btn:hover{border-color:var(--green);color:var(--green);}
-.target-bar{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 24px;margin-bottom:24px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:20px;align-items:center;}
-.tm-label{font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;}
-.tm-value{font-size:24px;font-family:'Instrument Serif',serif;line-height:1;}
-.tm-value.green{color:var(--green);}
-.tm-value.amber{color:var(--amber);}
-.tm-sub{font-size:11px;color:var(--muted2);margin-top:4px;font-family:'DM Mono',monospace;}
-.target-progress{grid-column:span 2;}
-.tp-header{display:flex;justify-content:space-between;font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);margin-bottom:8px;}
-.tp-bar{height:8px;background:var(--surface2);border-radius:4px;overflow:hidden;}
-.tp-fill{height:100%;border-radius:4px;transition:width .6s ease,background .3s;}
-.target-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:99px;font-size:12px;font-family:'DM Mono',monospace;font-weight:500;margin-top:10px;}
-.tb-hit{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);}
-.tb-miss{background:var(--surface2);color:var(--muted);border:1px solid var(--border);}
-.tabs{display:flex;gap:2px;margin-bottom:24px;border-bottom:1px solid var(--border);}
-.tab{padding:10px 20px;font-size:13px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;font-family:'DM Mono',monospace;background:none;border-top:none;border-left:none;border-right:none;}
-.tab:hover{color:var(--text);}
-.tab.active{color:var(--green);border-bottom-color:var(--green);}
-.panel{display:none;}
-.panel.active{display:block;}
-.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:24px;}
-.metric{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px 20px;}
-.metric-label{font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;}
-.metric-value{font-size:26px;font-weight:300;font-family:'Instrument Serif',serif;line-height:1;}
-.metric-value.green{color:var(--green);}
-.metric-value.red{color:var(--red);}
-.metric-value.amber{color:var(--amber);}
-.metric-sub{font-size:11px;color:var(--muted2);margin-top:5px;}
-.notice{padding:12px 16px;border-radius:8px;font-size:12px;margin-bottom:20px;font-family:'DM Mono',monospace;line-height:1.6;}
-.notice-ok{background:var(--green-bg);border:1px solid var(--green-border);color:var(--green);}
-.notice-err{background:var(--red-bg);border:1px solid var(--red-border);color:var(--red);}
-.notice-warn{background:var(--amber-bg);border:1px solid rgba(251,191,36,.2);color:var(--amber);}
-.controls{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center;}
-.ctrl-select{padding:7px 12px;background:var(--surface);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-size:12px;font-family:'DM Mono',monospace;cursor:pointer;outline:none;}
-.ctrl-select:focus{border-color:var(--green);}
-.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:20px;}
-table{width:100%;border-collapse:collapse;}
-th{padding:11px 14px;text-align:left;font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;border-bottom:1px solid var(--border);background:var(--surface2);font-weight:400;}
-td{padding:12px 14px;border-bottom:1px solid var(--border);vertical-align:middle;font-size:13px;}
-tr:last-child td{border-bottom:none;}
-tr:hover td{background:rgba(255,255,255,.02);}
-.market-name{font-weight:400;color:var(--text);line-height:1.4;}
-.market-ticker{font-size:11px;font-family:'DM Mono',monospace;color:var(--muted2);margin-top:2px;}
-.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:4px;font-size:11px;font-family:'DM Mono',monospace;font-weight:500;letter-spacing:.03em;}
-.b-bet{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);}
-.b-fade{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border);}
-.b-skip{background:transparent;color:var(--muted2);border:1px solid var(--border);}
-.b-paper{background:var(--amber-bg);color:var(--amber);border:1px solid rgba(251,191,36,.2);}
-.b-live{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);}
-.b-insane{background:#7c3aed22;color:#a78bfa;border:1px solid #7c3aed44;}
-.b-none{background:transparent;color:var(--muted2);border:1px solid var(--border);font-style:italic;}
-.b-24h{background:var(--blue-bg);color:var(--blue);border:1px solid rgba(96,165,250,.2);}
-.price-col{display:flex;flex-direction:column;gap:4px;}
-.price-row{display:flex;align-items:center;gap:8px;}
-.p-lbl{font-size:10px;font-family:'DM Mono',monospace;color:var(--muted2);width:12px;}
-.mini-bar{width:44px;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden;}
-.mini-fill{height:100%;border-radius:2px;}
-.p-num{font-size:12px;font-family:'DM Mono',monospace;}
-.empty-state{text-align:center;padding:60px 20px;color:var(--muted);}
-.empty-state .big{font-family:'Instrument Serif',serif;font-size:32px;color:var(--muted2);margin-bottom:12px;}
-.kelly-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;margin-bottom:24px;}
-.kelly-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px;}
-.kelly-title{font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:20px;}
-.slider-field{margin-bottom:18px;}
-.slider-header{display:flex;justify-content:space-between;margin-bottom:8px;}
-.slider-label{font-size:12px;color:var(--muted);}
-.slider-val{font-size:13px;font-family:'DM Mono',monospace;color:var(--text);}
-input[type=range]{width:100%;-webkit-appearance:none;height:4px;background:var(--surface2);border-radius:2px;outline:none;}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--green);cursor:pointer;border:2px solid var(--bg);}
-.result-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
-.result-box{background:var(--surface2);border-radius:8px;padding:14px;}
-.result-label{font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;}
-.result-val{font-size:22px;font-family:'Instrument Serif',serif;color:var(--text);}
-.kelly-verdict{padding:14px 16px;border-radius:8px;font-size:12px;line-height:1.7;font-family:'DM Mono',monospace;}
-.kv-bet{background:var(--green-bg);border:1px solid var(--green-border);color:var(--green);}
-.kv-fade{background:var(--red-bg);border:1px solid var(--red-border);color:var(--red);}
-.kv-skip{background:var(--surface2);border:1px solid var(--border);color:var(--muted);}
-.scenario-list{display:flex;flex-direction:column;gap:8px;margin-top:16px;}
-.scenario-item{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;}
-.sc-name{font-size:12px;color:var(--text);}
-.sc-desc{font-size:11px;font-family:'DM Mono',monospace;color:var(--muted2);margin-top:2px;}
-.sc-right{display:flex;align-items:center;gap:8px;}
-.load-btn{padding:4px 10px;border:1px solid var(--border2);border-radius:4px;background:transparent;color:var(--muted);font-size:11px;font-family:'DM Mono',monospace;cursor:pointer;transition:all .15s;}
-.load-btn:hover{border-color:var(--green);color:var(--green);}
-.footer{margin-top:48px;padding-top:20px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:11px;font-family:'DM Mono',monospace;color:var(--muted2);}
-.live-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);margin-right:4px;animation:glow 1.5s ease-in-out infinite;}
-@keyframes glow{0%,100%{opacity:.4}50%{opacity:1;box-shadow:0 0 6px var(--green)}}
-@media(max-width:768px){.metrics{grid-template-columns:repeat(2,1fr);}.kelly-grid{grid-template-columns:1fr;}.target-bar{grid-template-columns:repeat(2,1fr);}.target-progress{grid-column:span 2;}}
-</style>
-</head>
-<body>
-<div class="app">
+from flask import Flask, jsonify
+from flask_cors import CORS
+import requests, os, re, time, threading, logging
+from datetime import datetime, date, timezone
 
-<div class="topbar">
-  <div>
-    <span class="logo-text">Kalshi Edge Bot</span>
-    <span class="logo-tag" id="mode-tag">PAPER MODE</span>
-  </div>
-  <div class="topbar-right">
-    <div class="status-pill">
-      <div class="dot" id="conn-dot"></div>
-      <span id="conn-text">connecting...</span>
-    </div>
-    <button class="topbar-btn" onclick="loadAll()">↻ refresh</button>
-  </div>
-</div>
+app = Flask(__name__, static_folder=".", static_url_path="")
+CORS(app)
+logging.basicConfig(level=logging.INFO)
 
-<div class="target-bar">
-  <div>
-    <div class="tm-label">today's profit</div>
-    <div class="tm-value green" id="daily-profit">$0.00</div>
-    <div class="tm-sub">estimated</div>
-  </div>
-  <div>
-    <div class="tm-label">daily target</div>
-    <div class="tm-value" id="daily-target">$25.00</div>
-    <div class="tm-sub">minimum floor</div>
-  </div>
-  <div>
-    <div class="tm-label">trades today</div>
-    <div class="tm-value amber" id="daily-trades">0</div>
-    <div class="tm-sub">signals taken</div>
-  </div>
-  <div class="target-progress">
-    <div class="tp-header">
-      <span>progress to $25 target</span>
-      <span id="tp-pct">0%</span>
-    </div>
-    <div class="tp-bar">
-      <div class="tp-fill" id="tp-fill" style="width:0%;background:var(--red)"></div>
-    </div>
-    <div style="text-align:center">
-      <span class="target-badge tb-miss" id="target-badge">$25.00 to go</span>
-    </div>
-  </div>
-</div>
+KALSHI_KEY        = os.environ.get("KALSHI_API_KEY")
+ODDS_API_KEY      = os.environ.get("ODDS_API_KEY")
+BASE_URL          = "https://api.elections.kalshi.com/trade-api/v2"
+ODDS_URL          = "https://api.the-odds-api.com/v4"
+WEATHER_URL       = "https://api.open-meteo.com/v1/forecast"
 
-<div class="tabs">
-  <button class="tab active" onclick="switchTab('markets',this)">markets</button>
-  <button class="tab" onclick="switchTab('trades',this)">trade log</button>
-  <button class="tab" onclick="switchTab('kelly',this)">kelly sizer</button>
-</div>
+MAX_BET           = float(os.environ.get("MAX_BET", 25))
+DAILY_LIMIT       = float(os.environ.get("DAILY_LIMIT", 100))
+MIN_EDGE          = float(os.environ.get("MIN_EDGE", 0.10))
+KELLY_FRAC        = float(os.environ.get("KELLY_FRAC", 0.25))
+BANKROLL          = float(os.environ.get("BANKROLL", 500))
+AUTO_ENABLED      = os.environ.get("AUTO_ENABLED", "false").lower() == "true"
+AUTO_TRIGGER_EDGE = float(os.environ.get("AUTO_TRIGGER_EDGE", 0.20))
+SCAN_INTERVAL     = int(os.environ.get("SCAN_INTERVAL", 180))
+DAILY_TARGET      = float(os.environ.get("DAILY_TARGET", 25))
+MAX_HOURS         = int(os.environ.get("MAX_HOURS", 72))
 
-<!-- MARKETS -->
-<div class="panel active" id="panel-markets">
-  <div class="metrics">
-    <div class="metric"><div class="metric-label">total markets</div><div class="metric-value" id="m-total">—</div><div class="metric-sub">from Kalshi</div></div>
-    <div class="metric"><div class="metric-label">BET signals</div><div class="metric-value green" id="m-bet">—</div><div class="metric-sub">underpriced</div></div>
-    <div class="metric"><div class="metric-label">FADE signals</div><div class="metric-value red" id="m-fade">—</div><div class="metric-sub">overpriced</div></div>
-    <div class="metric"><div class="metric-label">last updated</div><div class="metric-value" id="m-time" style="font-size:18px">—</div><div class="metric-sub">auto refresh 30s</div></div>
-  </div>
-  <div id="markets-notice"></div>
-  <div class="controls">
-    <select class="ctrl-select" id="mkt-filter" onchange="renderMarkets()">
-      <option value="all">all markets</option>
-      <option value="scored">has signal</option>
-      <option value="bet">BET only</option>
-      <option value="fade">FADE only</option>
-      <option value="insane">insane edge only</option>
-      <option value="short">closing soon</option>
-    </select>
-    <select class="ctrl-select" id="mkt-sort" onchange="renderMarkets()">
-      <option value="edge">sort by edge</option>
-      <option value="hours">sort by time left</option>
-      <option value="volume">sort by volume</option>
-    </select>
-  </div>
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th style="width:30%">market</th>
-          <th style="width:9%">closes in</th>
-          <th style="width:16%">crowd vs base rate</th>
-          <th style="width:12%">signal</th>
-          <th style="width:8%">edge</th>
-          <th style="width:10%">est. profit</th>
-          <th style="width:9%">volume</th>
-          <th style="width:6%">live</th>
-        </tr>
-      </thead>
-      <tbody id="markets-body">
-        <tr><td colspan="8"><div class="empty-state"><div class="big">loading...</div></div></td></tr>
-      </tbody>
-    </table>
-  </div>
-</div>
+daily_state = {
+    "date":        str(date.today()),
+    "spent":       0.0,
+    "profit":      0.0,
+    "target_hit":  False,
+    "trade_count": 0,
+    "auto_count":  0
+}
+trade_log    = []
+live_odds    = {}
+live_weather = {}
 
-<!-- TRADES -->
-<div class="panel" id="panel-trades">
-  <div class="metrics">
-    <div class="metric"><div class="metric-label">signals logged</div><div class="metric-value" id="t-total">—</div><div class="metric-sub">all time</div></div>
-    <div class="metric"><div class="metric-label">spent today</div><div class="metric-value amber" id="t-spent">—</div><div class="metric-sub" id="t-spent-sub">of daily limit</div></div>
-    <div class="metric"><div class="metric-label">budget left</div><div class="metric-value green" id="t-remain">—</div><div class="metric-sub">before limit</div></div>
-    <div class="metric"><div class="metric-label">auto bets</div><div class="metric-value" id="t-auto" style="color:#a78bfa">—</div><div class="metric-sub">insane edge fired</div></div>
-  </div>
-  <div id="trades-notice"></div>
-  <div class="controls">
-    <select class="ctrl-select" id="trade-filter" onchange="renderTrades()">
-      <option value="all">all signals</option>
-      <option value="LIVE">live bets only</option>
-      <option value="PAPER">paper only</option>
-      <option value="BET">BET signals</option>
-      <option value="FADE">FADE signals</option>
-    </select>
-  </div>
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th style="width:26%">market</th>
-          <th style="width:10%">signal</th>
-          <th style="width:13%">crowd vs base</th>
-          <th style="width:7%">edge</th>
-          <th style="width:8%">bet</th>
-          <th style="width:9%">est. profit</th>
-          <th style="width:8%">closes in</th>
-          <th style="width:7%">type</th>
-          <th style="width:6%">mode</th>
-          <th style="width:6%">time</th>
-        </tr>
-      </thead>
-      <tbody id="trades-body">
-        <tr><td colspan="10"><div class="empty-state"><div class="big">waiting...</div><p>Bot scans every 3 minutes. First signals appear soon.</p></div></td></tr>
-      </tbody>
-    </table>
-  </div>
-</div>
+SPORTS = [
+    "basketball_nba",
+    "americanfootball_nfl",
+    "baseball_mlb",
+    "icehockey_nhl",
+]
 
-<!-- KELLY -->
-<div class="panel" id="panel-kelly">
-  <div class="kelly-grid">
-    <div class="kelly-card">
-      <div class="kelly-title">inputs</div>
-      <div class="slider-field">
-        <div class="slider-header"><span class="slider-label">bankroll</span><span class="slider-val" id="k-bankroll-val">$500</span></div>
-        <input type="range" min="100" max="10000" step="100" value="500" id="k-bankroll" oninput="calcKelly()">
-      </div>
-      <div class="slider-field">
-        <div class="slider-header"><span class="slider-label">kalshi crowd price</span><span class="slider-val" id="k-crowd-val">30¢</span></div>
-        <input type="range" min="1" max="99" step="1" value="30" id="k-crowd" oninput="calcKelly()">
-      </div>
-      <div class="slider-field">
-        <div class="slider-header"><span class="slider-label">your base rate estimate</span><span class="slider-val" id="k-base-val">15%</span></div>
-        <input type="range" min="1" max="99" step="1" value="15" id="k-base" oninput="calcKelly()">
-      </div>
-      <div class="slider-field">
-        <div class="slider-header"><span class="slider-label">kelly fraction</span><span class="slider-val" id="k-frac-val">0.5×</span></div>
-        <input type="range" min="0.1" max="1" step="0.1" value="0.5" id="k-frac" oninput="calcKelly()">
-        <div style="font-size:11px;color:var(--muted2);margin-top:6px;font-family:'DM Mono',monospace;">0.5 = half kelly — recommended</div>
-      </div>
-      <div>
-        <div style="font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;">quick scenarios</div>
-        <div class="scenario-list">
-          <div class="scenario-item"><div><div class="sc-name">S&P closes up today?</div><div class="sc-desc">crowd 65¢ — base rate 52%</div></div><div class="sc-right"><span class="badge b-fade">FADE</span><button class="load-btn" onclick="loadKelly(65,52)">load</button></div></div>
-          <div class="scenario-item"><div><div class="sc-name">Rain in NYC today?</div><div class="sc-desc">crowd 45¢ — base rate 28%</div></div><div class="sc-right"><span class="badge b-fade">FADE</span><button class="load-btn" onclick="loadKelly(45,28)">load</button></div></div>
-          <div class="scenario-item"><div><div class="sc-name">NBA favorite wins?</div><div class="sc-desc">crowd 55¢ — base rate 62%</div></div><div class="sc-right"><span class="badge b-bet">BET</span><button class="load-btn" onclick="loadKelly(55,62)">load</button></div></div>
-          <div class="scenario-item"><div><div class="sc-name">BTC above target?</div><div class="sc-desc">crowd 60¢ — base rate 48%</div></div><div class="sc-right"><span class="badge b-fade">FADE</span><button class="load-btn" onclick="loadKelly(60,48)">load</button></div></div>
-        </div>
-      </div>
-    </div>
-    <div class="kelly-card">
-      <div class="kelly-title">output</div>
-      <div class="result-grid">
-        <div class="result-box"><div class="result-label">bet size</div><div class="result-val" id="k-bet">—</div></div>
-        <div class="result-box"><div class="result-label">% of bankroll</div><div class="result-val" id="k-pct">—</div></div>
-        <div class="result-box"><div class="result-label">win profit</div><div class="result-val" id="k-win">—</div></div>
-        <div class="result-box"><div class="result-label">max loss</div><div class="result-val" id="k-loss">—</div></div>
-      </div>
-      <div style="margin-bottom:16px;">
-        <div style="display:flex;justify-content:space-between;font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);margin-bottom:8px;"><span>bankroll at risk</span><span id="k-risk-pct">0%</span></div>
-        <div style="height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;"><div id="k-risk-bar" style="height:100%;border-radius:3px;transition:width .4s,background .3s;width:0%;background:var(--green);"></div></div>
-      </div>
-      <div class="kelly-verdict kv-skip" id="k-verdict">adjust the sliders to see your recommendation</div>
-      <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:8px;font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);line-height:1.8;">
-        <strong style="color:var(--text);display:block;margin-bottom:6px;">how kelly works</strong>
-        kelly = edge / odds. optimal fraction of bankroll per trade. half kelly = ~75% of growth with much lower risk. never exceed the recommendation.
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="footer">
-  <span>kalshi edge bot — auto trading active — $25 daily minimum target</span>
-  <span id="footer-time">—</span>
-</div>
-
-</div>
-<script>
-const BACKEND="https://kalshi-backend-production-8697.up.railway.app";
-let allMarkets=[],allTrades=[];
-
-function switchTab(name,el){
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
-  el.classList.add('active');
-  document.getElementById('panel-'+name).classList.add('active');
+CITY_COORDS = {
+    "new york":    (40.71, -74.01),
+    "nyc":         (40.71, -74.01),
+    "los angeles": (34.05, -118.24),
+    "chicago":     (41.88, -87.63),
+    "houston":     (29.76, -95.37),
+    "dallas":      (32.78, -96.80),
+    "miami":       (25.77, -80.19),
+    "seattle":     (47.61, -122.33),
+    "boston":      (42.36, -71.06),
+    "denver":      (39.74, -104.98),
 }
 
-function fmt$(v){return '$'+parseFloat(v||0).toFixed(2);}
-function fmtVol(v){if(!v)return'—';if(v>=1000000)return'$'+(v/1000000).toFixed(1)+'M';if(v>=1000)return'$'+Math.round(v/1000)+'K';return'$'+v;}
-function fmtH(h){if(h==null)return'—';if(h<0)return'expired';if(h<1)return Math.round(h*60)+'m';if(h<24)return h.toFixed(1)+'h';return Math.round(h/24)+'d';}
-function setConn(ok){document.getElementById('conn-dot').className='dot '+(ok?'green':'red');document.getElementById('conn-text').textContent=ok?'connected':'disconnected';}
+def refresh_sports_odds():
+    global live_odds
+    if not ODDS_API_KEY:
+        return
+    new_odds = {}
+    for sport in SPORTS:
+        try:
+            r = requests.get(
+                f"{ODDS_URL}/sports/{sport}/odds",
+                params={"apiKey": ODDS_API_KEY, "regions": "us", "markets": "h2h", "oddsFormat": "decimal"},
+                timeout=10
+            )
+            if r.status_code != 200:
+                continue
+            for game in r.json():
+                home = game.get("home_team", "")
+                away = game.get("away_team", "")
+                home_probs, away_probs = [], []
+                for bk in game.get("bookmakers", []):
+                    for market in bk.get("markets", []):
+                        if market["key"] != "h2h":
+                            continue
+                        for outcome in market["outcomes"]:
+                            dec  = outcome["price"]
+                            prob = 1 / dec if dec > 0 else 0
+                            if outcome["name"] == home:
+                                home_probs.append(prob)
+                            elif outcome["name"] == away:
+                                away_probs.append(prob)
+                if home_probs and away_probs:
+                    avg_home = sum(home_probs) / len(home_probs)
+                    avg_away = sum(away_probs) / len(away_probs)
+                    total    = avg_home + avg_away
+                    new_odds[home.lower()] = round(avg_home / total, 4)
+                    new_odds[away.lower()] = round(avg_away / total, 4)
+        except Exception as e:
+            logging.error(f"Odds API error {sport}: {e}")
+    live_odds = new_odds
+    logging.info(f"Sports odds: {len(live_odds)} teams loaded")
 
-async function loadStatus(){
-  try{
-    const r=await fetch(`${BACKEND}/status`);
-    if(!r.ok)throw new Error(r.status);
-    const s=await r.json();
-    const profit=parseFloat(s.daily_profit||0);
-    const target=parseFloat(s.daily_target||25);
-    const spent=parseFloat(s.daily_spent||0);
-    const limit=parseFloat(s.daily_limit||100);
-    const trades=parseInt(s.trade_count||0);
-    const autoCount=parseInt(s.auto_count||0);
-    const isAuto=s.auto_enabled===true||s.auto_enabled==='true';
-    const pct=Math.min(100,(profit/target)*100);
-    const hit=profit>=target;
+def refresh_weather():
+    global live_weather
+    new_weather = {}
+    for city, (lat, lon) in CITY_COORDS.items():
+        try:
+            r = requests.get(
+                WEATHER_URL,
+                params={"latitude": lat, "longitude": lon, "hourly": "precipitation_probability", "forecast_days": 1, "timezone": "auto"},
+                timeout=10
+            )
+            if r.status_code != 200:
+                continue
+            probs = r.json().get("hourly", {}).get("precipitation_probability", [])
+            if probs:
+                new_weather[city] = round(sum(probs) / len(probs) / 100, 4)
+        except Exception as e:
+            logging.error(f"Weather error {city}: {e}")
+    live_weather = new_weather
+    logging.info(f"Weather: {len(live_weather)} cities loaded")
 
-    document.getElementById('daily-profit').textContent=fmt$(profit);
-    document.getElementById('daily-target').textContent=fmt$(target);
-    document.getElementById('daily-trades').textContent=trades;
-    document.getElementById('tp-pct').textContent=pct.toFixed(0)+'%';
-    document.getElementById('t-spent').textContent=fmt$(spent);
-    document.getElementById('t-spent-sub').textContent='of '+fmt$(limit)+' limit';
-    document.getElementById('t-remain').textContent=fmt$(Math.max(0,limit-spent));
-    document.getElementById('t-auto').textContent=autoCount;
+def get_headers():
+    return {"Authorization": f"Bearer {KALSHI_KEY}", "Content-Type": "application/json"}
 
-    const fill=document.getElementById('tp-fill');
-    fill.style.width=pct+'%';
-    fill.style.background=hit?'var(--green)':pct>60?'var(--amber)':'var(--red)';
+def extract_team(title):
+    t = title.lower()
+    for pat in [r"will the (.+?) win", r"will (.+?) beat", r"will (.+?) defeat"]:
+        m = re.search(pat, t)
+        if m:
+            return m.group(1).strip()
+    return None
 
-    const badge=document.getElementById('target-badge');
-    if(hit){badge.className='target-badge tb-hit';badge.textContent='✓ $25 target hit — keep going!';}
-    else{badge.className='target-badge tb-miss';badge.textContent='$'+(target-profit).toFixed(2)+' to go';}
+def extract_city(title):
+    t = title.lower()
+    for city in CITY_COORDS:
+        if city in t:
+            return city
+    return None
 
-    document.getElementById('mode-tag').textContent=isAuto?'LIVE':'PAPER MODE';
-    document.getElementById('mode-tag').style.color=isAuto?'var(--green)':'var(--amber)';
+def get_live_base_rate(title):
+    t = title.lower()
+    if any(w in t for w in ["win", "beat", "defeat"]):
+        team = extract_team(title)
+        if team and live_odds:
+            for known_team, prob in live_odds.items():
+                if team in known_team or known_team in team:
+                    return prob, f"Live odds ({known_team})"
+            for word in team.split():
+                if len(word) > 4:
+                    for known_team, prob in live_odds.items():
+                        if word in known_team:
+                            return prob, f"Live odds (~{known_team})"
+    if any(w in t for w in ["rain", "precipitation", "snow", "storm"]):
+        city = extract_city(title)
+        if city and city in live_weather:
+            return live_weather[city], f"Live weather ({city})"
+    return None, None
 
-    const liveTeams=parseInt(s.live_teams||0);
-    const liveCities=parseInt(s.live_cities||0);
-    document.getElementById('trades-notice').innerHTML=`<div class="notice notice-ok">
-      <span class="live-dot"></span>bot scanning every ${s.scan_interval}s —
-      ${liveTeams} live sports teams loaded —
-      ${liveCities} cities weather loaded —
-      max bet: ${fmt$(s.max_bet)} —
-      daily limit: ${fmt$(s.daily_limit)}
-    </div>`;
-
-    document.getElementById('footer-time').textContent='updated '+new Date().toLocaleTimeString();
-    setConn(true);
-  }catch(e){setConn(false);}
+STATIC_BASE_RATES = {
+    "spx_up":    {"pattern": r"s.?p.*(above|over|higher|up|close above|end above)",   "rate": 0.52, "source": "S&P daily 2000-2024"},
+    "spx_down":  {"pattern": r"s.?p.*(below|under|lower|down|close below|end below)", "rate": 0.48, "source": "S&P daily 2000-2024"},
+    "btc_up":    {"pattern": r"bitcoin|btc.*(above|over|higher|up)",                  "rate": 0.52, "source": "BTC daily 2018-2024"},
+    "btc_down":  {"pattern": r"bitcoin|btc.*(below|under|lower|down)",                "rate": 0.48, "source": "BTC daily 2018-2024"},
+    "nasdaq_up": {"pattern": r"nasdaq|qqq.*(above|over|higher|up)",                   "rate": 0.53, "source": "Nasdaq daily 2000-2024"},
+    "oil_up":    {"pattern": r"(oil|crude|wti).*(above|over|up|higher)",              "rate": 0.51, "source": "WTI daily 2000-2024"},
+    "rain_nyc":  {"pattern": r"rain.*(new york|nyc|ny)|new york.*rain",               "rate": 0.28, "source": "NOAA NYC 2000-2024"},
+    "rain_la":   {"pattern": r"rain.*(los angeles|la )|los angeles.*rain",            "rate": 0.12, "source": "NOAA LA 2000-2024"},
+    "snow":      {"pattern": r"snow.*(inch|cm|accumul)",                              "rate": 0.18, "source": "NOAA snowfall"},
+    "nba_fav":   {"pattern": r"nba.*(win|beat|defeat)|will the .* win",              "rate": 0.62, "source": "NBA win rate 2000-2024"},
+    "nfl_fav":   {"pattern": r"nfl.*(win|beat|defeat)",                              "rate": 0.58, "source": "NFL win rate 2000-2024"},
+    "mlb_fav":   {"pattern": r"mlb.*(win|beat|defeat)",                              "rate": 0.55, "source": "MLB win rate 2000-2024"},
+    "nhl_fav":   {"pattern": r"nhl.*(win|beat|defeat)",                              "rate": 0.57, "source": "NHL win rate 2000-2024"},
+    "fed_hold":  {"pattern": r"fed.*(hold|pause|unchanged|no change)",               "rate": 0.70, "source": "FRED 2000-2024"},
+    "fed_cut":   {"pattern": r"fed.*(cut|lower|reduce|pivot)",                       "rate": 0.30, "source": "FRED 2000-2024"},
+    "recession": {"pattern": r"recession",                                            "rate": 0.15, "source": "NBER 1945-2024"},
+    "shutdown":  {"pattern": r"government.*(shutdown|close)",                         "rate": 0.20, "source": "CRS history"},
+    "nohitter":  {"pattern": r"no.hitter",                                            "rate": 0.25, "source": "Baseball Reference"},
+    "hurricane": {"pattern": r"hurricane.*(gulf|florida|texas|landfall)",             "rate": 0.35, "source": "NOAA 1950-2024"},
 }
 
-async function loadMarkets(){
-  try{
-    const r=await fetch(`${BACKEND}/markets`);
-    if(!r.ok)throw new Error(r.status);
-    const json=await r.json();
-    allMarkets=(json.markets||[]).filter(m=>(m.mid_price||0)>0);
+def get_base_rate(title):
+    live_rate, live_source = get_live_base_rate(title)
+    if live_rate is not None:
+        return {"rate": live_rate, "source": live_source, "live": True}
+    t = (title or "").lower()
+    for key, data in STATIC_BASE_RATES.items():
+        if re.search(data["pattern"], t):
+            return {"rate": data["rate"], "source": data["source"], "live": False}
+    return None
 
-    const scored=allMarkets.filter(m=>m.edge&&m.edge.signal!=='SKIP');
-    const bets=allMarkets.filter(m=>m.edge&&m.edge.signal==='BET').length;
-    const fades=allMarkets.filter(m=>m.edge&&m.edge.signal==='FADE').length;
-    const insane=allMarkets.filter(m=>m.insane).length;
+def is_short_dated(market):
+    close_ts = market.get("close_time") or market.get("expiration_time")
+    if not close_ts:
+        return False
+    try:
+        if isinstance(close_ts, str):
+            close_ts = close_ts.replace("Z", "+00:00")
+            close_dt = datetime.fromisoformat(close_ts)
+        else:
+            close_dt = datetime.fromtimestamp(close_ts, tz=timezone.utc)
+        hours_left = (close_dt - datetime.now(timezone.utc)).total_seconds() / 3600
+        return 0 < hours_left <= MAX_HOURS
+    except:
+        return False
 
-    document.getElementById('m-total').textContent=allMarkets.length;
-    document.getElementById('m-bet').textContent=bets;
-    document.getElementById('m-fade').textContent=fades;
-    document.getElementById('m-time').textContent=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-    document.getElementById('markets-notice').innerHTML=`<div class="notice notice-ok">
-      ${allMarkets.length} markets loaded — ${scored.length} scored — ${bets} BET — ${fades} FADE — ${insane} insane edge
-    </div>`;
+def get_hours_left(market):
+    close_ts = market.get("close_time") or market.get("expiration_time")
+    if not close_ts:
+        return None
+    try:
+        if isinstance(close_ts, str):
+            close_ts = close_ts.replace("Z", "+00:00")
+            close_dt = datetime.fromisoformat(close_ts)
+        else:
+            close_dt = datetime.fromtimestamp(close_ts, tz=timezone.utc)
+        return round((close_dt - datetime.now(timezone.utc)).total_seconds() / 3600, 1)
+    except:
+        return None
 
-    renderMarkets();
-    setConn(true);
-  }catch(e){
-    document.getElementById('markets-notice').innerHTML=`<div class="notice notice-err">cannot reach backend: ${e.message}</div>`;
-    setConn(false);
-  }
-}
+def kelly(p_true, p_market, side):
+    if side == "NO":
+        p_true   = 1 - p_true
+        p_market = 1 - p_market
+    b = (1 - p_market) / p_market
+    return max(0.0, (b * p_true - (1 - p_true)) / b)
 
-function renderMarkets(){
-  const filter=document.getElementById('mkt-filter').value;
-  const sort=document.getElementById('mkt-sort').value;
+def compute_edge(market_price, base_rate):
+    diff = market_price - base_rate
+    if diff > MIN_EDGE:
+        return {"signal": "FADE", "direction": "NO",      "magnitude": round(abs(diff) * 100)}
+    elif diff < -MIN_EDGE:
+        return {"signal": "BET",  "direction": "YES",     "magnitude": round(abs(diff) * 100)}
+    return    {"signal": "SKIP",  "direction": "NEUTRAL", "magnitude": round(abs(diff) * 100)}
 
-  let data=allMarkets.filter(m=>{
-    if(filter==='scored') return m.edge&&m.edge.signal!=='SKIP';
-    if(filter==='bet')    return m.edge&&m.edge.signal==='BET';
-    if(filter==='fade')   return m.edge&&m.edge.signal==='FADE';
-    if(filter==='insane') return m.insane;
-    if(filter==='short')  return m.hours_left!=null&&m.hours_left>0&&m.hours_left<=24;
-    return true;
-  });
+def estimate_profit(bet_amt, market_price, direction):
+    if direction == "YES":
+        return round(bet_amt * (1 - market_price) / market_price, 2)
+    return round(bet_amt * market_price / (1 - market_price), 2)
 
-  data.sort((a,b)=>{
-    if(sort==='edge')   return((b.raw_edge||0)-(a.raw_edge||0));
-    if(sort==='volume') return((b.volume_24h||b.volume||0)-(a.volume_24h||a.volume||0));
-    const ah=a.hours_left!=null?a.hours_left:9999;
-    const bh=b.hours_left!=null?b.hours_left:9999;
-    return ah-bh;
-  });
+def reset_daily_if_needed():
+    today = str(date.today())
+    if daily_state["date"] != today:
+        daily_state.update({
+            "date": today, "spent": 0.0, "profit": 0.0,
+            "target_hit": False, "trade_count": 0, "auto_count": 0
+        })
 
-  const tbody=document.getElementById('markets-body');
-  if(!data.length){
-    tbody.innerHTML=`<tr><td colspan="8"><div class="empty-state"><div class="big">no matches</div><p>try "all markets" filter</p></div></td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML=data.slice(0,80).map(m=>{
-    const crowd=m.mid_price||0;
-    const br=m.base_rate?m.base_rate.rate:null;
-    const title=(m.title||m.ticker||'').slice(0,46)+((m.title||'').length>46?'…':'');
-    const hl=m.hours_left;
-    const urgColor=hl!=null&&hl<3?'var(--red)':hl!=null&&hl<12?'var(--amber)':'var(--muted)';
-
-    const priceCell=br!=null?`
-      <div class="price-col">
-        <div class="price-row"><span class="p-lbl">C</span><div class="mini-bar"><div class="mini-fill" style="width:${Math.round(crowd*100)}%;background:#60a5fa"></div></div><span class="p-num" style="color:#60a5fa">${Math.round(crowd*100)}¢</span></div>
-        <div class="price-row"><span class="p-lbl">B</span><div class="mini-bar"><div class="mini-fill" style="width:${Math.round(br*100)}%;background:#4ade80"></div></div><span class="p-num" style="color:#4ade80">${Math.round(br*100)}%</span></div>
-      </div>`:`<span style="font-family:'DM Mono',monospace;font-size:12px;color:var(--muted)">${Math.round(crowd*100)}¢</span>`;
-
-    let sigBadge='<span class="badge b-none">no data</span>';
-    let edgeStr='—';
-    if(m.edge){
-      if(m.insane) sigBadge=`<span class="badge b-insane">⚡ AUTO BET</span>`;
-      else if(m.edge.signal==='BET')  sigBadge=`<span class="badge b-bet">BET YES</span>`;
-      else if(m.edge.signal==='FADE') sigBadge=`<span class="badge b-fade">FADE NO</span>`;
-      else sigBadge=`<span class="badge b-skip">SKIP</span>`;
-      const col=m.edge.signal==='BET'?'var(--green)':m.edge.signal==='FADE'?'var(--red)':'var(--muted)';
-      if(m.edge.signal!=='SKIP') edgeStr=`<span style="font-family:'DM Mono',monospace;color:${col}">+${m.edge.magnitude}%</span>`;
+def place_order(ticker, side, price_cents, quantity):
+    payload = {
+        "ticker":          ticker,
+        "side":            side.lower(),
+        "type":            "limit",
+        "yes_price":       price_cents,
+        "count":           quantity,
+        "action":          "buy",
+        "client_order_id": f"autobot-{ticker}-{int(time.time())}"
     }
+    r = requests.post(f"{BASE_URL}/portfolio/orders", json=payload, headers=get_headers())
+    return r.json()
 
-    const estP=br!=null&&m.edge&&m.edge.signal!=='SKIP'?'~$'+(25*Math.abs(crowd-br)/(crowd<br?(1-crowd):crowd)).toFixed(2):'—';
-    const liveTag=m.base_rate&&m.base_rate.live?'<span class="live-dot"></span>live':'—';
+def scan_and_trade():
+    last_odds_refresh    = 0
+    last_weather_refresh = 0
+    while True:
+        try:
+            now_ts = time.time()
+            if now_ts - last_odds_refresh > 600:
+                refresh_sports_odds()
+                last_odds_refresh = now_ts
+            if now_ts - last_weather_refresh > 1800:
+                refresh_weather()
+                last_weather_refresh = now_ts
+            logging.info("scanning markets...")
+            reset_daily_if_needed()
+            r       = requests.get(f"{BASE_URL}/markets?limit=200&status=open", headers=get_headers())
+            markets = r.json().get("markets", [])
+            logging.info(f"total markets: {len(markets)}")
+            for m in markets:
+                ticker = m.get("ticker", "")
+                title  = m.get("title", "")
+                bid    = m.get("yes_bid", 0) or 0
+                ask    = m.get("yes_ask", 0) or 0
+                mid    = ((bid + ask) / 2) / 100 if bid and ask else (bid or ask) / 100
+                if mid <= 0:
+                    continue
+                br = get_base_rate(title)
+                if not br:
+                    continue
+                edge = compute_edge(mid, br["rate"])
+                if edge["signal"] == "SKIP":
+                    continue
+                raw_edge = abs(mid - br["rate"])
+                bet_amt  = round(min(BANKROLL * kelly(br["rate"], mid, edge["direction"]) * KELLY_FRAC, MAX_BET), 2)
+                if bet_amt < 1.0:
+                    continue
+                if daily_state["spent"] + bet_amt > DAILY_LIMIT:
+                    break
+                if any(t["ticker"] == ticker and t["date"] == str(date.today()) for t in trade_log):
+                    continue
+                est_profit = estimate_profit(bet_amt, mid, edge["direction"])
+                is_insane  = raw_edge >= AUTO_TRIGGER_EDGE
+                should_bet = is_insane or AUTO_ENABLED
+                log_entry = {
+                    "date":        str(date.today()),
+                    "time":        datetime.now().strftime("%H:%M:%S"),
+                    "ticker":      ticker,
+                    "title":       title[:60],
+                    "signal":      edge["signal"],
+                    "direction":   edge["direction"],
+                    "edge_pct":    edge["magnitude"],
+                    "crowd":       round(mid * 100),
+                    "base_rate":   round(br["rate"] * 100),
+                    "source":      br["source"],
+                    "live_data":   br.get("live", False),
+                    "bet_amt":     bet_amt,
+                    "est_profit":  est_profit,
+                    "hours_left":  get_hours_left(m),
+                    "insane_edge": is_insane,
+                    "status":      "LIVE" if should_bet else "PAPER",
+                    "result":      None
+                }
+                if should_bet:
+                    price_cents = round(mid * 100) if edge["direction"] == "YES" else round((1 - mid) * 100)
+                    quantity    = max(1, int(bet_amt / (price_cents / 100)))
+                    order       = place_order(ticker, edge["direction"], price_cents, quantity)
+                    log_entry["result"] = order
+                    daily_state["spent"]       += bet_amt
+                    daily_state["profit"]      += est_profit
+                    daily_state["trade_count"] += 1
+                    daily_state["target_hit"]   = daily_state["profit"] >= DAILY_TARGET
+                    if is_insane:
+                        daily_state["auto_count"] += 1
+                    logging.info(f"PLACED {edge['direction']} {ticker} ${bet_amt:.2f}")
+                else:
+                    logging.info(f"PAPER {edge['direction']} {ticker} ${bet_amt:.2f}")
+                    daily_state["trade_count"] += 1
+                trade_log.append(log_entry)
+                if len(trade_log) > 500:
+                    trade_log.pop(0)
+        except Exception as e:
+            logging.error(f"Scan error: {e}")
+        time.sleep(SCAN_INTERVAL)
 
-    return`<tr>
-      <td><div class="market-name">${title}</div><div class="market-ticker">${m.ticker||''}</div></td>
-      <td style="font-family:'DM Mono',monospace;font-size:12px;color:${urgColor}">${fmtH(hl)}</td>
-      <td>${priceCell}</td>
-      <td>${sigBadge}</td>
-      <td>${edgeStr}</td>
-      <td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--green)">${estP}</td>
-      <td style="font-size:12px;color:var(--muted)">${fmtVol(m.volume_24h||m.volume||0)}</td>
-      <td style="font-size:11px">${liveTag}</td>
-    </tr>`;
-  }).join('');
-}
+@app.route("/")
+def index():
+    return app.send_static_file("dashboard.html")
 
-async function loadTrades(){
-  try{
-    const r=await fetch(`${BACKEND}/trades`);
-    if(!r.ok)throw new Error(r.status);
-    const json=await r.json();
-    allTrades=json.trades||[];
-    document.getElementById('t-total').textContent=allTrades.length;
-    renderTrades();
-  }catch(e){
-    document.getElementById('trades-body').innerHTML=`<tr><td colspan="10"><div class="empty-state"><div class="big">error</div><p>${e.message}</p></div></td></tr>`;
-  }
-}
+@app.route("/debug")
+def debug():
+    try:
+        r = requests.get(f"{BASE_URL}/markets?limit=10&status=open", headers=get_headers())
+        markets = r.json().get("markets", [])
+        return jsonify({
+            "total_markets": len(markets),
+            "kalshi_status": r.status_code,
+            "max_hours":     MAX_HOURS,
+            "sample": [{
+                "ticker":        m.get("ticker"),
+                "title":         m.get("title", "")[:50],
+                "close_time":    m.get("close_time"),
+                "hours_left":    get_hours_left(m),
+                "short_dated":   is_short_dated(m),
+                "yes_bid":       m.get("yes_bid"),
+                "yes_ask":       m.get("yes_ask"),
+                "mid_price":     round(((m.get("yes_bid",0) or 0)+(m.get("yes_ask",0) or 0))/200,4),
+                "has_base_rate": get_base_rate(m.get("title","")) is not None
+            } for m in markets[:3]]
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)})
 
-function renderTrades(){
-  const filter=document.getElementById('trade-filter').value;
-  let data=allTrades.filter(t=>{
-    if(filter==='LIVE')  return t.status==='LIVE';
-    if(filter==='PAPER') return t.status==='PAPER';
-    if(filter==='BET')   return t.signal==='BET';
-    if(filter==='FADE')  return t.signal==='FADE';
-    return true;
-  });
-  const tbody=document.getElementById('trades-body');
-  if(!data.length){
-    tbody.innerHTML=`<tr><td colspan="10"><div class="empty-state"><div class="big">waiting...</div><p>Bot scans every 3 minutes. Signals appear shortly.</p></div></td></tr>`;
-    return;
-  }
-  tbody.innerHTML=data.slice(0,100).map(t=>{
-    const sigBadge=t.signal==='BET'?`<span class="badge b-bet">BET YES</span>`:`<span class="badge b-fade">FADE NO</span>`;
-    const modeBadge=t.status==='LIVE'?`<span class="badge b-live">live</span>`:`<span class="badge b-paper">paper</span>`;
-    const typeBadge=t.insane_edge?`<span class="badge b-insane">⚡ auto</span>`:`<span class="badge b-skip">normal</span>`;
-    const col=t.signal==='BET'?'var(--green)':'var(--red)';
-    const liveLabel=t.live_data?'<span class="live-dot"></span>':'';
-    return`<tr>
-      <td><div class="market-name">${(t.title||t.ticker||'').slice(0,34)}…</div><div class="market-ticker">${t.ticker||''}</div></td>
-      <td>${sigBadge}</td>
-      <td style="font-family:'DM Mono',monospace;font-size:12px;">${liveLabel}<span style="color:#60a5fa">${t.crowd||'—'}¢</span><span style="color:var(--muted2)"> / </span><span style="color:#4ade80">${t.base_rate||'—'}%</span></td>
-      <td style="font-family:'DM Mono',monospace;color:${col}">+${t.edge_pct||0}%</td>
-      <td style="font-family:'DM Mono',monospace;">${fmt$(t.bet_amt||0)}</td>
-      <td style="font-family:'DM Mono',monospace;color:var(--green)">${t.est_profit?'~$'+t.est_profit:'—'}</td>
-      <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)">${fmtH(t.hours_left)}</td>
-      <td>${typeBadge}</td>
-      <td>${modeBadge}</td>
-      <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted2)">${t.time||'—'}</td>
-    </tr>`;
-  }).join('');
-}
+@app.route("/markets")
+def markets():
+    r      = requests.get(f"{BASE_URL}/markets?limit=200&status=open", headers=get_headers())
+    result = []
+    for m in r.json().get("markets", []):
+        bid  = m.get("yes_bid", 0) or 0
+        ask  = m.get("yes_ask", 0) or 0
+        mid  = ((bid + ask) / 2) / 100 if bid and ask else (bid or ask) / 100
+        m["mid_price"]   = round(mid, 4)
+        m["short_dated"] = is_short_dated(m)
+        m["hours_left"]  = get_hours_left(m)
+        br = get_base_rate(m.get("title", ""))
+        if br:
+            m["base_rate"] = br
+            m["edge"]      = compute_edge(mid, br["rate"])
+            m["raw_edge"]  = round(abs(mid - br["rate"]) * 100)
+            m["insane"]    = abs(mid - br["rate"]) >= AUTO_TRIGGER_EDGE
+        else:
+            m["base_rate"] = None
+            m["edge"]      = None
+            m["raw_edge"]  = 0
+            m["insane"]    = False
+        result.append(m)
+    return jsonify({"markets": result})
 
-function kellyCalc(pt,pm,side){if(side==='FADE'){pt=1-pt;pm=1-pm;}const b=(1-pm)/pm;return Math.max(0,(b*pt-(1-pt))/b);}
+@app.route("/trades")
+def trades():
+    return jsonify({
+        "trades":       list(reversed(trade_log)),
+        "daily_state":  daily_state,
+        "daily_target": DAILY_TARGET,
+        "auto_enabled": AUTO_ENABLED,
+        "auto_trigger": AUTO_TRIGGER_EDGE,
+        "live_teams":   len(live_odds),
+        "live_cities":  len(live_weather),
+    })
 
-function calcKelly(){
-  const bankroll=+document.getElementById('k-bankroll').value;
-  const crowd=+document.getElementById('k-crowd').value;
-  const base=+document.getElementById('k-base').value;
-  const frac=+document.getElementById('k-frac').value;
-  document.getElementById('k-bankroll-val').textContent='$'+bankroll.toLocaleString();
-  document.getElementById('k-crowd-val').textContent=crowd+'¢';
-  document.getElementById('k-base-val').textContent=base+'%';
-  document.getElementById('k-frac-val').textContent=frac.toFixed(1)+'×';
-  const pm=crowd/100,pt=base/100,diff=pt-pm;
-  const side=diff>0.08?'BET':diff<-0.08?'FADE':'SKIP';
-  const kUsed=kellyCalc(pt,pm,side==='FADE'?'FADE':'BET')*frac;
-  const bet=bankroll*kUsed;
-  const payout=side==='BET'?bet*(1-pm)/pm:bet*pm/(1-pm);
-  const riskPct=Math.min(kUsed*100,100);
-  document.getElementById('k-bet').textContent=kUsed>0?'$'+bet.toFixed(0):'$0';
-  document.getElementById('k-pct').textContent=kUsed>0?(kUsed*100).toFixed(1)+'%':'0%';
-  document.getElementById('k-win').textContent=kUsed>0?'+$'+payout.toFixed(0):'—';
-  document.getElementById('k-loss').textContent=kUsed>0?'-$'+bet.toFixed(0):'—';
-  document.getElementById('k-risk-pct').textContent=riskPct.toFixed(1)+'%';
-  const bar=document.getElementById('k-risk-bar');
-  bar.style.width=riskPct+'%';
-  bar.style.background=riskPct>20?'var(--red)':riskPct>10?'var(--amber)':'var(--green)';
-  const verdict=document.getElementById('k-verdict');
-  if(side==='SKIP'||kUsed===0){verdict.className='kelly-verdict kv-skip';verdict.textContent='no meaningful edge — skip this market.';}
-  else if(side==='BET'){verdict.className='kelly-verdict kv-bet';verdict.innerHTML=`bet YES $${bet.toFixed(0)} — base rate (${base}%) is ${Math.round(Math.abs(diff)*100)}pts above crowd (${crowd}¢). win profit: +$${payout.toFixed(0)}.`;}
-  else{verdict.className='kelly-verdict kv-fade';verdict.innerHTML=`fade NO $${bet.toFixed(0)} — crowd prices YES at ${crowd}¢ but base rate is only ${base}%. win profit: +$${payout.toFixed(0)}.`;}
-}
+@app.route("/status")
+def status():
+    return jsonify({
+        "auto_enabled":    AUTO_ENABLED,
+        "auto_trigger":    AUTO_TRIGGER_EDGE,
+        "daily_spent":     daily_state["spent"],
+        "daily_profit":    daily_state["profit"],
+        "daily_target":    DAILY_TARGET,
+        "target_hit":      daily_state["target_hit"],
+        "trade_count":     daily_state["trade_count"],
+        "auto_count":      daily_state["auto_count"],
+        "daily_limit":     DAILY_LIMIT,
+        "daily_remaining": DAILY_LIMIT - daily_state["spent"],
+        "max_bet":         MAX_BET,
+        "min_edge":        MIN_EDGE,
+        "kelly_fraction":  KELLY_FRAC,
+        "bankroll":        BANKROLL,
+        "scan_interval":   SCAN_INTERVAL,
+        "max_hours":       MAX_HOURS,
+        "live_teams":      len(live_odds),
+        "live_cities":     len(live_weather),
+    })
 
-function loadKelly(crowd,base){
-  document.getElementById('k-crowd').value=crowd;
-  document.getElementById('k-base').value=base;
-  switchTab('kelly',document.querySelectorAll('.tab')[2]);
-  calcKelly();
-}
-
-async function loadAll(){await Promise.all([loadStatus(),loadMarkets(),loadTrades()]);}
-calcKelly();
-loadAll();
-setInterval(loadAll,30000);
-</script>
-</body>
-</html>
+if __name__ == "__main__":
+    threading.Thread(target=scan_and_trade, daemon=True).start()
+    app.run(host="0.0.0.0", port=8080)
