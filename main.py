@@ -24,6 +24,12 @@ SCAN_INTERVAL     = int(os.environ.get("SCAN_INTERVAL", 180))
 DAILY_TARGET      = float(os.environ.get("DAILY_TARGET", 25))
 MAX_HOURS         = int(os.environ.get("MAX_HOURS", 72))
 
+# Favorite-longshot bias thresholds
+# Markets below LONGSHOT_MAX are overpriced longshots - bet NO
+# Markets above FAVORITE_MIN are underpriced favorites - bet YES
+LONGSHOT_MAX      = float(os.environ.get("LONGSHOT_MAX", 0.15))
+FAVORITE_MIN      = float(os.environ.get("FAVORITE_MIN", 0.85))
+
 daily_state = {
     "date":        str(date.today()),
     "spent":       0.0,
@@ -185,6 +191,34 @@ def get_base_rate(title):
             return {"rate": data["rate"], "source": data["source"], "live": False}
     return None
 
+def get_bias_signal(mid):
+    """
+    Pure favorite-longshot bias strategy.
+    No base rate needed — just exploit known Kalshi pricing bias.
+    Longshots below 15c are overpriced — bet NO.
+    Favorites above 85c are underpriced — bet YES.
+    """
+    if mid <= 0:
+        return None
+    if mid < LONGSHOT_MAX:
+        true_rate = mid * 0.6
+        return {
+            "rate":      true_rate,
+            "source":    "Longshot bias (Kalshi research)",
+            "live":      False,
+            "bias_type": "longshot"
+        }
+    if mid > FAVORITE_MIN:
+        true_rate = mid + (1 - mid) * 0.3
+        true_rate = min(true_rate, 0.97)
+        return {
+            "rate":      true_rate,
+            "source":    "Favorite bias (Kalshi research)",
+            "live":      False,
+            "bias_type": "favorite"
+        }
+    return None
+
 def is_short_dated(market):
     close_ts = market.get("close_time") or market.get("expiration_time")
     if not close_ts:
@@ -267,11 +301,14 @@ def scan_and_trade():
             if now_ts - last_weather_refresh > 1800:
                 refresh_weather()
                 last_weather_refresh = now_ts
+
             logging.info("scanning markets...")
             reset_daily_if_needed()
+
             r       = requests.get(f"{BASE_URL}/markets?limit=200&status=open", headers=get_headers())
             markets = r.json().get("markets", [])
             logging.info(f"total markets: {len(markets)}")
+
             for m in markets:
                 ticker = m.get("ticker", "")
                 title  = m.get("title", "")
@@ -280,23 +317,33 @@ def scan_and_trade():
                 mid    = ((bid + ask) / 2) / 100 if bid and ask else (bid or ask) / 100
                 if mid <= 0:
                     continue
+
+                # Try base rate first, then fall back to bias strategy
                 br = get_base_rate(title)
                 if not br:
+                    br = get_bias_signal(mid)
+                if not br:
                     continue
+
                 edge = compute_edge(mid, br["rate"])
                 if edge["signal"] == "SKIP":
                     continue
+
                 raw_edge = abs(mid - br["rate"])
                 bet_amt  = round(min(BANKROLL * kelly(br["rate"], mid, edge["direction"]) * KELLY_FRAC, MAX_BET), 2)
+
                 if bet_amt < 1.0:
                     continue
                 if daily_state["spent"] + bet_amt > DAILY_LIMIT:
+                    logging.info("daily limit hit")
                     break
                 if any(t["ticker"] == ticker and t["date"] == str(date.today()) for t in trade_log):
                     continue
+
                 est_profit = estimate_profit(bet_amt, mid, edge["direction"])
                 is_insane  = raw_edge >= AUTO_TRIGGER_EDGE
                 should_bet = is_insane or AUTO_ENABLED
+
                 log_entry = {
                     "date":        str(date.today()),
                     "time":        datetime.now().strftime("%H:%M:%S"),
@@ -309,6 +356,7 @@ def scan_and_trade():
                     "base_rate":   round(br["rate"] * 100),
                     "source":      br["source"],
                     "live_data":   br.get("live", False),
+                    "bias_type":   br.get("bias_type", "model"),
                     "bet_amt":     bet_amt,
                     "est_profit":  est_profit,
                     "hours_left":  get_hours_left(m),
@@ -316,6 +364,7 @@ def scan_and_trade():
                     "status":      "LIVE" if should_bet else "PAPER",
                     "result":      None
                 }
+
                 if should_bet:
                     price_cents = round(mid * 100) if edge["direction"] == "YES" else round((1 - mid) * 100)
                     quantity    = max(1, int(bet_amt / (price_cents / 100)))
@@ -331,9 +380,11 @@ def scan_and_trade():
                 else:
                     logging.info(f"PAPER {edge['direction']} {ticker} ${bet_amt:.2f}")
                     daily_state["trade_count"] += 1
+
                 trade_log.append(log_entry)
                 if len(trade_log) > 500:
                     trade_log.pop(0)
+
         except Exception as e:
             logging.error(f"Scan error: {e}")
         time.sleep(SCAN_INTERVAL)
@@ -341,30 +392,6 @@ def scan_and_trade():
 @app.route("/")
 def index():
     return app.send_static_file("dashboard.html")
-
-@app.route("/debug")
-def debug():
-    try:
-        r = requests.get(f"{BASE_URL}/markets?limit=10&status=open", headers=get_headers())
-        markets = r.json().get("markets", [])
-        return jsonify({
-            "total_markets": len(markets),
-            "kalshi_status": r.status_code,
-            "max_hours":     MAX_HOURS,
-            "sample": [{
-                "ticker":        m.get("ticker"),
-                "title":         m.get("title", "")[:50],
-                "close_time":    m.get("close_time"),
-                "hours_left":    get_hours_left(m),
-                "short_dated":   is_short_dated(m),
-                "yes_bid":       m.get("yes_bid"),
-                "yes_ask":       m.get("yes_ask"),
-                "mid_price":     round(((m.get("yes_bid",0) or 0)+(m.get("yes_ask",0) or 0))/200,4),
-                "has_base_rate": get_base_rate(m.get("title","")) is not None
-            } for m in markets[:3]]
-        })
-    except Exception as e:
-        return jsonify({"error": str(e)})
 
 @app.route("/markets")
 def markets():
@@ -377,7 +404,11 @@ def markets():
         m["mid_price"]   = round(mid, 4)
         m["short_dated"] = is_short_dated(m)
         m["hours_left"]  = get_hours_left(m)
+
         br = get_base_rate(m.get("title", ""))
+        if not br:
+            br = get_bias_signal(mid)
+
         if br:
             m["base_rate"] = br
             m["edge"]      = compute_edge(mid, br["rate"])
@@ -424,6 +455,8 @@ def status():
         "max_hours":       MAX_HOURS,
         "live_teams":      len(live_odds),
         "live_cities":     len(live_weather),
+        "longshot_max":    LONGSHOT_MAX,
+        "favorite_min":    FAVORITE_MIN,
     })
 
 if __name__ == "__main__":
